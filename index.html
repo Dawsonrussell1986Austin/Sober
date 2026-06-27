@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0d1117" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Sober" />
+  <title>Sober</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1 class="logo">Sober</h1>
+      <button id="settingsBtn" class="icon-btn" aria-label="Settings">⚙</button>
+    </header>
+
+    <main class="main">
+      <!-- Big counter -->
+      <section class="counter-card">
+        <div class="counter-number" id="dayCount">0</div>
+        <div class="counter-label" id="dayLabel">days sober</div>
+        <div class="counter-since" id="sinceText"></div>
+      </section>
+
+      <!-- Today's check-in -->
+      <section class="checkin-card">
+        <div class="checkin-text">
+          <div class="checkin-title" id="checkinTitle">Stay strong today</div>
+          <div class="checkin-sub" id="checkinSub">Tap to log that you stayed sober today.</div>
+        </div>
+        <button id="checkinBtn" class="checkin-btn">Check in</button>
+      </section>
+
+      <!-- Stats row -->
+      <section class="stats-row">
+        <div class="stat">
+          <div class="stat-value" id="statCurrent">0</div>
+          <div class="stat-label">Current streak</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="statBest">0</div>
+          <div class="stat-label">Best streak</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="statTotal">0</div>
+          <div class="stat-label">Total days</div>
+        </div>
+      </section>
+
+      <!-- GitHub-style activity grid -->
+      <section class="grid-card">
+        <div class="grid-header">
+          <span class="grid-title">Activity</span>
+          <div class="year-nav">
+            <button id="prevYear" class="year-btn" aria-label="Previous year">‹</button>
+            <span id="yearLabel" class="year-label">2026</span>
+            <button id="nextYear" class="year-btn" aria-label="Next year">›</button>
+          </div>
+        </div>
+        <div class="grid-scroll">
+          <div class="grid-wrap">
+            <div class="month-labels" id="monthLabels"></div>
+            <div class="grid-body">
+              <div class="day-labels">
+                <span></span><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span>
+              </div>
+              <div class="grid" id="grid"></div>
+            </div>
+          </div>
+        </div>
+        <div class="legend">
+          <span>Less</span>
+          <span class="legend-cell l0"></span>
+          <span class="legend-cell l1"></span>
+          <span class="legend-cell l2"></span>
+          <span class="legend-cell l3"></span>
+          <span>More</span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Settings modal -->
+  <div id="settingsModal" class="modal hidden">
+    <div class="modal-card">
+      <h2>Settings</h2>
+      <label class="field">
+        <span>Sobriety start date</span>
+        <input type="date" id="startDateInput" />
+      </label>
+      <p class="hint">Every day from your start date counts as sober automatically. You can also tap "Check in" each day.</p>
+      <div class="modal-actions">
+        <button id="resetBtn" class="btn-danger">Reset all data</button>
+        <button id="closeSettings" class="btn-primary">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
