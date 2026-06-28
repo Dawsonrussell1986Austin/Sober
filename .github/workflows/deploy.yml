@@ -1,12 +1,11 @@
 name: Deploy to GitHub Pages
 
-# Publishes the app to GitHub Pages on every push to the branch.
+# Publishes the app to GitHub Pages. Manual-only (Run workflow button) so it
+# doesn't fail before Pages is enabled in repo Settings. Enable Pages
+# (Settings -> Pages -> Source: GitHub Actions), then run it from the Actions tab.
 # After the first successful run, your app is live at:
 #   https://<user>.github.io/<repo>/
 on:
-  push:
-    branches:
-      - claude/sobriety-tracker-app-ictcjd
   workflow_dispatch:
 
 permissions:
