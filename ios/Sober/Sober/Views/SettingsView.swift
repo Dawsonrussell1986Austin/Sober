@@ -52,6 +52,19 @@ struct SettingsView: View {
                             .background(RoundedRectangle(cornerRadius: 12).fill(Theme.surface).overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.border)))
                         }
 
+                        field("2-2-2 moderation mode") {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Toggle(isOn: Binding(get: { store.mode222 }, set: { store.mode222 = $0 })) {
+                                    Text("Track moderate drinking").font(.system(size: 15)).foregroundColor(Theme.text)
+                                }
+                                .tint(Theme.accent)
+                                Text("An idea from Kevin Rose: no more than 2 drinks a day, never 2 days in a row, and ≤ 2 nights a week. Log drinks from \u{201C}Edit a past day.\u{201D}")
+                                    .font(.system(size: 12)).foregroundColor(Theme.textDim)
+                            }
+                            .padding(14)
+                            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.surface).overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.border)))
+                        }
+
                         Text("Every day from your start date counts as sober automatically. Set a daily figure to see the money and time you've reclaimed.")
                             .font(.system(size: 13)).foregroundColor(Theme.textDim)
 

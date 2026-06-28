@@ -4,6 +4,7 @@ import UIKit
 struct ContentView: View {
     @EnvironmentObject var store: SobrietyStore
     @State private var showSettings = false
+    @State private var showWhyEditor = false
     @State private var showConfetti = false
     @State private var celebrateText: String?
 
@@ -15,9 +16,11 @@ struct ContentView: View {
                 VStack(spacing: 14) {
                     header
                     heroRing
+                    whyCard
                     checkInCard
                     statsRow
                     savingsCard
+                    mode222Card
                     milestonesRow
                     RecoveryTimelineView()
                     ActivityGridView()
@@ -43,7 +46,71 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $showSettings) { SettingsView().environmentObject(store) }
+        .sheet(isPresented: $showWhyEditor) { WhyEditorView().environmentObject(store) }
         .onAppear(perform: celebrateIfNeeded)
+    }
+
+    // MARK: - "My why"
+    private var whyCard: some View {
+        Button { showWhyEditor = true } label: {
+            HStack(alignment: .top, spacing: 10) {
+                Text("\u{201C}")
+                    .font(.system(size: 34, weight: .bold, design: .serif))
+                    .foregroundColor(Theme.accent).offset(y: 2)
+                Group {
+                    if store.why.isEmpty {
+                        Text("Tap to add your reason for getting sober.").foregroundColor(Theme.textDim)
+                    } else {
+                        Text(store.why).italic().foregroundColor(Theme.text)
+                    }
+                }
+                .font(.system(size: 15))
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(16)
+            .background(RoundedRectangle(cornerRadius: 16)
+                .fill(Theme.surface)
+                .overlay(RoundedRectangle(cornerRadius: 16).fill(LinearGradient(colors: [Theme.accent.opacity(0.10), .clear], startPoint: .top, endPoint: .bottom)))
+                .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.border)))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - 2-2-2 moderation
+    @ViewBuilder private var mode222Card: some View {
+        if store.mode222 {
+            let e = store.eval222
+            let onTrack = e.rule1ok && e.rule2ok && e.rule3ok
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Moderation · 2-2-2").font(.system(size: 15, weight: .semibold)).foregroundColor(Theme.text)
+                    Spacer()
+                    Text("via Kevin Rose").font(.system(size: 11)).foregroundColor(Theme.textDim)
+                }
+                Text("\(onTrack ? "✓ On track this week" : "⚠ Watch your limits") · \(e.nights)/2 nights this week")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(onTrack ? Theme.level4 : Color(hex: 0xffce6b))
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(RoundedRectangle(cornerRadius: 10).fill((onTrack ? Theme.accent : Color(hex: 0xffb442)).opacity(0.12)))
+                ruleRow("≤ 2 drinks per day", e.rule1ok)
+                ruleRow("Never 2 days in a row", e.rule2ok)
+                ruleRow("≤ 2 nights per week", e.rule3ok)
+            }
+            .padding(.horizontal, 18).padding(.vertical, 16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 16).fill(Theme.surface).overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.border)))
+        }
+    }
+    private func ruleRow(_ text: String, _ ok: Bool) -> some View {
+        HStack(spacing: 10) {
+            ZStack {
+                Circle().fill(ok ? Theme.accent : Color(hex: 0xffb442)).frame(width: 20, height: 20)
+                Image(systemName: ok ? "checkmark" : "xmark").font(.system(size: 10, weight: .bold)).foregroundColor(Color(hex: 0x160b04))
+            }
+            Text(text).font(.system(size: 13)).foregroundColor(Theme.text)
+            Spacer()
+        }
     }
 
     // MARK: - Header
@@ -238,6 +305,48 @@ struct ContentView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.9) {
             withAnimation { showConfetti = false }
         }
+    }
+}
+
+/// Editor for the personal "why" statement.
+private struct WhyEditorView: View {
+    @EnvironmentObject var store: SobrietyStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var text = ""
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Theme.bg.ignoresSafeArea()
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Why do you want to be more sober? You'll see this at the top every day.")
+                        .font(.system(size: 13)).foregroundColor(Theme.textDim)
+                    TextEditor(text: $text)
+                        .scrollContentBackground(.hidden)
+                        .padding(10)
+                        .frame(height: 140)
+                        .foregroundColor(Theme.text)
+                        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.surface).overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.border)))
+                    Spacer()
+                }
+                .padding(20)
+            }
+            .navigationTitle("Your reason")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Clear") { text = "" }.foregroundColor(Theme.textDim)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        store.why = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                        dismiss()
+                    }.foregroundColor(Theme.accent)
+                }
+            }
+            .onAppear { text = store.why }
+        }
+        .preferredColorScheme(.dark)
     }
 }
 

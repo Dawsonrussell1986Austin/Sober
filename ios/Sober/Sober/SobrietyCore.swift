@@ -58,6 +58,9 @@ struct SobrietyData {
     var reminderEnabled: Bool = false
     var reminderHour: Int = 20
     var reminderMinute: Int = 0
+    var why: String = ""
+    var mode222: Bool = false
+    var drinks: [String: Int] = [:]   // day key -> drink count (2-2-2 mode)
 
     static let calendar = Calendar.current
     static let keyFormatter: DateFormatter = {
@@ -78,6 +81,9 @@ struct SobrietyData {
     private static let kReminderOn = "sober.reminderEnabled"
     private static let kReminderH = "sober.reminderHour"
     private static let kReminderM = "sober.reminderMinute"
+    private static let kWhy = "sober.why"
+    private static let kMode222 = "sober.mode222"
+    private static let kDrinks = "sober.drinks"
 
     static func load() -> SobrietyData {
         let d = AppGroup.defaults
@@ -90,7 +96,10 @@ struct SobrietyData {
             lastCelebrated: d.integer(forKey: kCelebrated),
             reminderEnabled: d.bool(forKey: kReminderOn),
             reminderHour: d.object(forKey: kReminderH) as? Int ?? 20,
-            reminderMinute: d.object(forKey: kReminderM) as? Int ?? 0
+            reminderMinute: d.object(forKey: kReminderM) as? Int ?? 0,
+            why: d.string(forKey: kWhy) ?? "",
+            mode222: d.bool(forKey: kMode222),
+            drinks: (d.dictionary(forKey: kDrinks) as? [String: Int]) ?? [:]
         )
     }
 
@@ -105,6 +114,9 @@ struct SobrietyData {
         d.set(reminderEnabled, forKey: Self.kReminderOn)
         d.set(reminderHour, forKey: Self.kReminderH)
         d.set(reminderMinute, forKey: Self.kReminderM)
+        d.set(why, forKey: Self.kWhy)
+        d.set(mode222, forKey: Self.kMode222)
+        d.set(drinks, forKey: Self.kDrinks)
     }
 
     /// Log today as a sober day directly in shared storage (used by the
@@ -123,7 +135,8 @@ struct SobrietyData {
 
     // MARK: status
     func isSober(_ k: String) -> Bool {
-        if excluded.contains(k) { return false }   // explicitly marked not sober
+        if (drinks[k] ?? 0) > 0 { return false }    // a drinking day isn't sober
+        if excluded.contains(k) { return false }    // explicitly marked not sober
         if checkins.contains(k) { return true }
         if let s = startDate { return k >= key(s) && k <= todayKey }
         return false
@@ -166,7 +179,26 @@ struct SobrietyData {
             }
         }
         set.subtract(excluded)
+        for (k, n) in drinks where n > 0 { set.remove(k) }
         return Array(set)
+    }
+
+    // MARK: 2-2-2 (Kevin Rose) — evaluated over a rolling 7 days
+    struct Eval222 { let nights: Int; let rule1ok: Bool; let rule2ok: Bool; let rule3ok: Bool }
+    func eval222() -> Eval222 {
+        let cal = Self.calendar
+        var weekKeys: [String] = []
+        for i in 0..<7 {
+            let day = cal.date(byAdding: .day, value: -i, to: cal.startOfDay(for: Date()))!
+            weekKeys.append(key(day))
+        }
+        weekKeys.sort()
+        func d(_ k: String) -> Int { drinks[k] ?? 0 }
+        let nights = weekKeys.filter { d($0) > 0 }.count
+        let maxPerDay = weekKeys.map { d($0) }.max() ?? 0
+        var backToBack = false
+        for i in 1..<weekKeys.count where d(weekKeys[i - 1]) > 0 && d(weekKeys[i]) > 0 { backToBack = true }
+        return Eval222(nights: nights, rule1ok: maxPerDay <= 2, rule2ok: !backToBack, rule3ok: nights <= 2)
     }
 
     var bestStreak: Int {

@@ -201,24 +201,48 @@ private struct EditDayView: View {
                         .padding(8)
                         .background(RoundedRectangle(cornerRadius: 12).fill(Theme.surface).overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.border)))
 
-                    let sober = store.isSober(store.key(date))
+                    let key = store.key(date)
+                    let count = store.drinkCount(on: key)
+                    let sober = store.isSober(key)
                     HStack {
                         Spacer()
-                        Text(sober ? "● Marked sober" : "○ Not logged")
+                        Text(count > 0 ? "🍷 \(count)\(count >= 3 ? "+" : "") drink\(count > 1 ? "s" : "")"
+                                       : (sober ? "● Sober day" : "○ Not marked"))
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(sober ? Theme.level4 : Theme.textDim)
+                            .foregroundColor(count > 0 ? Theme.textDim : (sober ? Theme.level4 : Theme.textDim))
                         Spacer()
                     }
 
-                    Button {
-                        store.toggleDay(store.key(date))
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    } label: {
-                        Text(sober ? "Mark as not sober" : "Mark as sober")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity).padding(.vertical, 14)
-                            .background(RoundedRectangle(cornerRadius: 10).fill(Theme.accent))
+                    if store.mode222 {
+                        Text("Drinks that day").font(.system(size: 13)).foregroundColor(Theme.textDim)
+                        HStack(spacing: 8) {
+                            ForEach(0..<4) { n in
+                                Button {
+                                    store.setDrinks(key, n)
+                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                } label: {
+                                    Text(n == 3 ? "3+" : "\(n)")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundColor(count == n ? Color(hex: 0x160b04) : Theme.text)
+                                        .frame(maxWidth: .infinity).padding(.vertical, 12)
+                                        .background(RoundedRectangle(cornerRadius: 10)
+                                            .fill(count == n ? Theme.accent : Theme.bg)
+                                            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.border)))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    } else {
+                        Button {
+                            store.toggleDay(key)
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        } label: {
+                            Text(sober ? "I had a drink" : "I was sober")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity).padding(.vertical, 14)
+                                .background(RoundedRectangle(cornerRadius: 10).fill(Theme.accent))
+                        }
                     }
 
                     Text("Tip: you can also tap any day in the grid to toggle it.")

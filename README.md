@@ -27,7 +27,9 @@ A proper iPhone app written in SwiftUI. No third-party dependencies.
 - **Milestone badges** (1 week → 1 year) that light up as you reach them, with a **confetti celebration**
 - **What you've reclaimed** — money not spent (defaults to $12/day) and time saved
 - **What's happening in your body** — a science-backed recovery timeline (24h → 1 year) with a countdown to the next milestone and cited sources
-- **Backfill** — tap any past day, or use "Edit a past day", to log days you forgot
+- **Your "why"** — a personal reason you write, shown at the top every day
+- **2-2-2 moderation mode** (idea from Kevin Rose) — optional mode to track moderate drinking against ≤2 drinks/day, never 2 days in a row, ≤2 nights/week
+- **Backfill** — tap any past day, or use "Edit a past day", to log days you forgot (with a drink count in 2-2-2 mode)
 - **Year activity grid** — the whole year fits on screen (no scrolling), shown as a warm heat-map
 - **Stats** — current streak, best streak, total sober days
 - **Home-screen & lock-screen widgets** (see below)

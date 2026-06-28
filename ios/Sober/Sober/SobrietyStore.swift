@@ -15,6 +15,9 @@ final class SobrietyStore: ObservableObject {
     @Published var reminderEnabled: Bool { didSet { persist() } }
     @Published var reminderHour: Int { didSet { persist() } }
     @Published var reminderMinute: Int { didSet { persist() } }
+    @Published var why: String { didSet { persist() } }
+    @Published var mode222: Bool { didSet { persist() } }
+    @Published var drinks: [String: Int] { didSet { persist() } }
 
     private var suppressPersist = false
 
@@ -29,6 +32,9 @@ final class SobrietyStore: ObservableObject {
         reminderEnabled = d.reminderEnabled
         reminderHour = d.reminderHour
         reminderMinute = d.reminderMinute
+        why = d.why
+        mode222 = d.mode222
+        drinks = d.drinks
     }
 
     /// Re-read from shared storage (e.g. after the interactive widget logs a
@@ -45,6 +51,9 @@ final class SobrietyStore: ObservableObject {
         reminderEnabled = d.reminderEnabled
         reminderHour = d.reminderHour
         reminderMinute = d.reminderMinute
+        why = d.why
+        mode222 = d.mode222
+        drinks = d.drinks
         suppressPersist = false
     }
 
@@ -54,7 +63,8 @@ final class SobrietyStore: ObservableObject {
                      dailySpend: dailySpend, dailyHours: dailyHours,
                      lastCelebrated: lastCelebrated,
                      reminderEnabled: reminderEnabled,
-                     reminderHour: reminderHour, reminderMinute: reminderMinute)
+                     reminderHour: reminderHour, reminderMinute: reminderMinute,
+                     why: why, mode222: mode222, drinks: drinks)
     }
 
     private func persist() {
@@ -93,10 +103,28 @@ final class SobrietyStore: ObservableObject {
         }
     }
 
+    /// Set the drink count for a day (2-2-2 mode). 0 clears it back to sober.
+    func setDrinks(_ key: String, _ count: Int) {
+        guard key <= todayKey else { return }
+        if count > 0 {
+            drinks[key] = count
+            checkins.remove(key)
+            excluded.remove(key)
+        } else {
+            drinks.removeValue(forKey: key)
+        }
+    }
+
+    var eval222: SobrietyData.Eval222 { data.eval222() }
+    func drinkCount(on key: String) -> Int { drinks[key] ?? 0 }
+
     func reset() {
         startDate = nil
         checkins = []
         excluded = []
+        drinks = [:]
+        why = ""
+        mode222 = false
         dailySpend = nil
         dailyHours = nil
         lastCelebrated = 0
