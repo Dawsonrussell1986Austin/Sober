@@ -68,6 +68,12 @@
         </div>
       </section>
 
+      <!-- What you've reclaimed (money / time) -->
+      <section class="savings-card" id="savingsCard">
+        <div class="savings-title">What you've reclaimed</div>
+        <div class="savings-row" id="savingsRow"></div>
+      </section>
+
       <!-- Milestone badges -->
       <section class="milestones" id="milestones"></section>
 
@@ -108,7 +114,17 @@
         <span>Sobriety start date</span>
         <input type="date" id="startDateInput" />
       </label>
-      <p class="hint">Every day from your start date counts as sober automatically. You can also tap "Check in" each day.</p>
+      <div class="field-row">
+        <label class="field">
+          <span>Money saved / day</span>
+          <input type="number" inputmode="decimal" min="0" step="0.5" id="dailySpendInput" placeholder="$ e.g. 15" />
+        </label>
+        <label class="field">
+          <span>Hours saved / day</span>
+          <input type="number" inputmode="decimal" min="0" step="0.5" id="dailyHoursInput" placeholder="e.g. 2" />
+        </label>
+      </div>
+      <p class="hint">Every day from your start date counts as sober automatically. You can also tap "Check in" each day. Set a daily figure to see what you've reclaimed.</p>
       <div class="modal-actions">
         <button id="resetBtn" class="btn-danger">Reset all data</button>
         <button id="closeSettings" class="btn-primary">Done</button>
@@ -117,6 +133,7 @@
   </div>
 
   <div id="toast" class="toast hidden"></div>
+  <canvas id="confetti" class="confetti"></canvas>
 
   <script src="app.js"></script>
 </body>

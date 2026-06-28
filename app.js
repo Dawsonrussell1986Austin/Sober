@@ -37,11 +37,12 @@ function daysBetween(aKey, bKey) {
 
 /* ---------- storage ---------- */
 function load() {
+  const defaults = { startDate: null, checkins: {}, dailySpend: null, dailyHours: null, lastCelebrated: 0 };
   try {
     const raw = localStorage.getItem(STORE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) return Object.assign(defaults, JSON.parse(raw));
   } catch (e) {}
-  return { startDate: null, checkins: {} };
+  return defaults;
 }
 function save(state) { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
 
@@ -161,6 +162,43 @@ function renderStats() {
   document.getElementById("statTotal").textContent = totalDays();
 }
 
+function renderSavings() {
+  const n = daysSober();
+  const card = document.getElementById("savingsCard");
+  const row = document.getElementById("savingsRow");
+  const hasMoney = state.dailySpend != null && state.dailySpend > 0;
+  const hasHours = state.dailyHours != null && state.dailyHours > 0;
+
+  if (!hasMoney && !hasHours) {
+    card.classList.add("empty");
+    row.innerHTML = `<div class="savings-empty">Set a daily figure in <button id="savingsSettingsLink">settings</button> to see the money and time you've reclaimed.</div>`;
+    const link = document.getElementById("savingsSettingsLink");
+    if (link) link.addEventListener("click", openSettings);
+    return;
+  }
+
+  card.classList.remove("empty");
+  const items = [];
+  if (hasMoney) {
+    const total = Math.round(n * state.dailySpend);
+    items.push(`<div class="savings-item">
+      <div class="savings-value">$${total.toLocaleString()}</div>
+      <div class="savings-sub">not spent · $${state.dailySpend}/day</div>
+    </div>`);
+  }
+  if (hasHours) {
+    const totalH = n * state.dailyHours;
+    const days = Math.floor(totalH / 24);
+    const hrs = Math.round(totalH % 24);
+    const pretty = days > 0 ? `${days}d ${hrs}h` : `${Math.round(totalH)}h`;
+    items.push(`<div class="savings-item">
+      <div class="savings-value">${pretty}</div>
+      <div class="savings-sub">reclaimed · ${state.dailyHours}h/day</div>
+    </div>`);
+  }
+  row.innerHTML = items.join("");
+}
+
 function renderMilestones() {
   const n = daysSober();
   const el = document.getElementById("milestones");
@@ -260,9 +298,84 @@ function renderGrid() {
 function renderAll() {
   renderCounter();
   renderStats();
+  renderSavings();
   renderMilestones();
   renderCheckin();
   renderGrid();
+  maybeCelebrate();
+}
+
+/* Fire confetti when a new badge milestone is reached (once per milestone). */
+function maybeCelebrate() {
+  const n = daysSober();
+  const reached = BADGES.filter(b => n >= b.d).map(b => b.d);
+  const highest = reached.length ? Math.max(...reached) : 0;
+  if (highest > (state.lastCelebrated || 0)) {
+    state.lastCelebrated = highest;
+    save(state);
+    const badge = BADGES.find(b => b.d === highest);
+    burstConfetti();
+    toast(`${badge.icon} ${badge.label} milestone! Incredible.`);
+  }
+}
+
+/* ---------- confetti (lightweight, no deps) ---------- */
+function burstConfetti() {
+  const canvas = document.getElementById("confetti");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = window.innerWidth * dpr;
+  canvas.height = window.innerHeight * dpr;
+  ctx.scale(dpr, dpr);
+  canvas.classList.add("active");
+
+  const W = window.innerWidth, H = window.innerHeight;
+  const colors = ["#39d353", "#2ea043", "#26a641", "#e6edf3", "#0e4429"];
+  const N = 140;
+  const parts = Array.from({ length: N }, () => ({
+    x: W / 2 + (Math.random() - 0.5) * W * 0.3,
+    y: H * 0.32,
+    vx: (Math.random() - 0.5) * 9,
+    vy: Math.random() * -11 - 5,
+    s: 5 + Math.random() * 6,
+    rot: Math.random() * Math.PI,
+    vr: (Math.random() - 0.5) * 0.3,
+    c: colors[(Math.random() * colors.length) | 0],
+    life: 1,
+  }));
+
+  let frame = 0;
+  function tick() {
+    ctx.clearRect(0, 0, W, H);
+    frame++;
+    let alive = false;
+    for (const p of parts) {
+      p.vy += 0.32;          // gravity
+      p.vx *= 0.99;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rot += p.vr;
+      if (frame > 60) p.life -= 0.018;
+      if (p.life > 0 && p.y < H + 40) {
+        alive = true;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.c;
+        ctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * 0.6);
+        ctx.restore();
+      }
+    }
+    if (alive) {
+      requestAnimationFrame(tick);
+    } else {
+      ctx.clearRect(0, 0, W, H);
+      canvas.classList.remove("active");
+    }
+  }
+  requestAnimationFrame(tick);
 }
 
 /* ---------- interactions ---------- */
@@ -291,12 +404,28 @@ document.getElementById("checkinBtn").addEventListener("click", () => {
 });
 
 const modal = document.getElementById("settingsModal");
-document.getElementById("settingsBtn").addEventListener("click", () => {
+function openSettings() {
   document.getElementById("startDateInput").value = state.startDate || "";
+  document.getElementById("dailySpendInput").value = state.dailySpend ?? "";
+  document.getElementById("dailyHoursInput").value = state.dailyHours ?? "";
   modal.classList.remove("hidden");
-});
+}
+document.getElementById("settingsBtn").addEventListener("click", openSettings);
 document.getElementById("closeSettings").addEventListener("click", () => modal.classList.add("hidden"));
 modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.add("hidden"); });
+
+document.getElementById("dailySpendInput").addEventListener("input", (e) => {
+  const v = parseFloat(e.target.value);
+  state.dailySpend = isNaN(v) || v < 0 ? null : v;
+  save(state);
+  renderSavings();
+});
+document.getElementById("dailyHoursInput").addEventListener("input", (e) => {
+  const v = parseFloat(e.target.value);
+  state.dailyHours = isNaN(v) || v < 0 ? null : v;
+  save(state);
+  renderSavings();
+});
 
 document.getElementById("startDateInput").addEventListener("change", (e) => {
   const v = e.target.value;
