@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 private struct WidthKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
@@ -11,6 +12,7 @@ struct ActivityGridView: View {
     @EnvironmentObject var store: SobrietyStore
     @State private var year: Int = Calendar.current.component(.year, from: Date())
     @State private var gridWidth: CGFloat = 0
+    @State private var showEdit = false
 
     private let monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 
@@ -30,11 +32,20 @@ struct ActivityGridView: View {
                 grid(layout)
                 footer(layout)
             }
+
+            Button { showEdit = true } label: {
+                Text("✎ Forgot a day? Edit a past day")
+                    .font(.system(size: 13, weight: .semibold)).foregroundColor(Theme.textDim)
+                    .frame(maxWidth: .infinity).padding(.vertical, 11)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Theme.surface2).overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.border)))
+            }
+            .padding(.top, 4)
         }
         .padding(.horizontal, 16).padding(.vertical, 18)
         .background(RoundedRectangle(cornerRadius: 16).fill(Theme.surface)
             .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.border)))
         .onPreferenceChange(WidthKey.self) { gridWidth = $0 }
+        .sheet(isPresented: $showEdit) { EditDayView().environmentObject(store) }
     }
 
     // MARK: - Header
@@ -78,6 +89,8 @@ struct ActivityGridView: View {
                 .fill(day.isSober ? Theme.level4 : Theme.level0)
                 .frame(width: size, height: size)
                 .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(day.isToday ? Theme.text : Color.white.opacity(0.04), lineWidth: day.isToday ? 1.5 : 1))
+                .contentShape(Rectangle())
+                .onTapGesture { if day.editable { store.toggleDay(store.key(day.date)) } }
         } else {
             Color.clear.frame(width: size, height: size)
         }
@@ -113,7 +126,7 @@ struct ActivityGridView: View {
     }
 
     // MARK: - Layout / data
-    private struct GridDay { let date: Date; let isSober: Bool; let isToday: Bool }
+    private struct GridDay { let date: Date; let isSober: Bool; let isToday: Bool; let editable: Bool }
     private struct MonthMark { let month: Int; let column: Int }
     private struct Layout {
         let columns: [[GridDay?]]
@@ -140,7 +153,9 @@ struct ActivityGridView: View {
             let k = store.key(day)
             let sober = day <= todayStart && store.isSober(k)
             if sober { soberCount += 1 }
-            cells.append(GridDay(date: day, isSober: sober, isToday: cal.isDate(day, inSameDayAs: Date())))
+            cells.append(GridDay(date: day, isSober: sober,
+                                 isToday: cal.isDate(day, inSameDayAs: Date()),
+                                 editable: day <= todayStart))
             day = cal.date(byAdding: .day, value: 1, to: day)!
         }
         while cells.count % 7 != 0 { cells.append(nil) }
@@ -166,5 +181,60 @@ struct ActivityGridView: View {
         }
 
         return Layout(columns: columns, cell: cell, gap: gap, monthMarks: marks, soberCount: soberCount)
+    }
+}
+
+/// Pick a date and toggle whether you were sober that day (backfill forgotten days).
+private struct EditDayView: View {
+    @EnvironmentObject var store: SobrietyStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var date = Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Theme.bg.ignoresSafeArea()
+                VStack(alignment: .leading, spacing: 18) {
+                    DatePicker("", selection: $date, in: ...Date(), displayedComponents: .date)
+                        .datePickerStyle(.graphical)
+                        .accentColor(Theme.accent)
+                        .padding(8)
+                        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.surface).overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.border)))
+
+                    let sober = store.isSober(store.key(date))
+                    HStack {
+                        Spacer()
+                        Text(sober ? "● Marked sober" : "○ Not logged")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(sober ? Theme.level4 : Theme.textDim)
+                        Spacer()
+                    }
+
+                    Button {
+                        store.toggleDay(store.key(date))
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    } label: {
+                        Text(sober ? "Mark as not sober" : "Mark as sober")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity).padding(.vertical, 14)
+                            .background(RoundedRectangle(cornerRadius: 10).fill(Theme.accent))
+                    }
+
+                    Text("Tip: you can also tap any day in the grid to toggle it.")
+                        .font(.system(size: 12)).foregroundColor(Theme.textDim)
+                    Spacer()
+                }
+                .padding(20)
+            }
+            .navigationTitle("Edit a day")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }.foregroundColor(Theme.accent)
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
     }
 }

@@ -19,6 +19,7 @@ struct ContentView: View {
                     statsRow
                     savingsCard
                     milestonesRow
+                    RecoveryTimelineView()
                     ActivityGridView()
                 }
                 .padding(.horizontal, 16)
@@ -116,7 +117,7 @@ struct ContentView: View {
     }
 
     private var sinceText: String {
-        guard let s = store.startDate else { return "tap ⚙ to set your start date" }
+        guard let s = store.data.streakStartDate else { return "tap a day or check in to start" }
         let f = DateFormatter(); f.dateFormat = "MMM d, yyyy"
         return "since " + f.string(from: s)
     }

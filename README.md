@@ -25,8 +25,10 @@ A proper iPhone app written in SwiftUI. No third-party dependencies.
 - **Progress ring** around your day count, filling toward the next milestone
 - **One-tap daily check-in** with haptic feedback
 - **Milestone badges** (1 week → 1 year) that light up as you reach them, with a **confetti celebration**
-- **What you've reclaimed** — money not spent and time saved, from a daily figure you set
-- **Year activity grid** — the whole year fits on screen (no scrolling), every sober day lit green
+- **What you've reclaimed** — money not spent (defaults to $12/day) and time saved
+- **What's happening in your body** — a science-backed recovery timeline (24h → 1 year) with a countdown to the next milestone and cited sources
+- **Backfill** — tap any past day, or use "Edit a past day", to log days you forgot
+- **Year activity grid** — the whole year fits on screen (no scrolling), shown as a warm heat-map
 - **Stats** — current streak, best streak, total sober days
 - **Home-screen & lock-screen widgets** (see below)
 - **Private & offline** — data is stored on-device; nothing leaves your phone

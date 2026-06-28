@@ -8,6 +8,7 @@ import WidgetKit
 final class SobrietyStore: ObservableObject {
     @Published var startDate: Date? { didSet { persist() } }
     @Published var checkins: Set<String> { didSet { persist() } }
+    @Published var excluded: Set<String> { didSet { persist() } }
     @Published var dailySpend: Double? { didSet { persist() } }
     @Published var dailyHours: Double? { didSet { persist() } }
     @Published var lastCelebrated: Int { didSet { persist() } }
@@ -21,6 +22,7 @@ final class SobrietyStore: ObservableObject {
         let d = SobrietyData.load()
         startDate = d.startDate
         checkins = d.checkins
+        excluded = d.excluded
         dailySpend = d.dailySpend
         dailyHours = d.dailyHours
         lastCelebrated = d.lastCelebrated
@@ -36,6 +38,7 @@ final class SobrietyStore: ObservableObject {
         suppressPersist = true
         startDate = d.startDate
         checkins = d.checkins
+        excluded = d.excluded
         dailySpend = d.dailySpend
         dailyHours = d.dailyHours
         lastCelebrated = d.lastCelebrated
@@ -47,7 +50,7 @@ final class SobrietyStore: ObservableObject {
 
     /// Snapshot for stat computations (all logic lives in SobrietyData).
     var data: SobrietyData {
-        SobrietyData(startDate: startDate, checkins: checkins,
+        SobrietyData(startDate: startDate, checkins: checkins, excluded: excluded,
                      dailySpend: dailySpend, dailyHours: dailyHours,
                      lastCelebrated: lastCelebrated,
                      reminderEnabled: reminderEnabled,
@@ -78,9 +81,22 @@ final class SobrietyStore: ObservableObject {
         checkins.insert(todayKey)
     }
 
+    /// Toggle whether a given day (today or earlier) counts as sober.
+    func toggleDay(_ key: String) {
+        guard key <= todayKey else { return }
+        if isSober(key) {
+            checkins.remove(key)
+            excluded.insert(key)
+        } else {
+            excluded.remove(key)
+            checkins.insert(key)
+        }
+    }
+
     func reset() {
         startDate = nil
         checkins = []
+        excluded = []
         dailySpend = nil
         dailyHours = nil
         lastCelebrated = 0

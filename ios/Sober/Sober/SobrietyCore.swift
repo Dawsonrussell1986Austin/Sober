@@ -51,6 +51,7 @@ enum Milestones {
 struct SobrietyData {
     var startDate: Date?
     var checkins: Set<String>
+    var excluded: Set<String> = []   // days explicitly marked NOT sober
     var dailySpend: Double?
     var dailyHours: Double?
     var lastCelebrated: Int
@@ -70,6 +71,7 @@ struct SobrietyData {
     // MARK: persistence keys
     private static let kStart = "sober.startDate"
     private static let kCheckins = "sober.checkins"
+    private static let kExcluded = "sober.excluded"
     private static let kSpend = "sober.dailySpend"
     private static let kHours = "sober.dailyHours"
     private static let kCelebrated = "sober.lastCelebrated"
@@ -82,6 +84,7 @@ struct SobrietyData {
         return SobrietyData(
             startDate: d.object(forKey: kStart) as? Date,
             checkins: Set((d.array(forKey: kCheckins) as? [String]) ?? []),
+            excluded: Set((d.array(forKey: kExcluded) as? [String]) ?? []),
             dailySpend: d.object(forKey: kSpend) as? Double,
             dailyHours: d.object(forKey: kHours) as? Double,
             lastCelebrated: d.integer(forKey: kCelebrated),
@@ -95,6 +98,7 @@ struct SobrietyData {
         let d = AppGroup.defaults
         d.set(startDate, forKey: Self.kStart)
         d.set(Array(checkins), forKey: Self.kCheckins)
+        d.set(Array(excluded), forKey: Self.kExcluded)
         if let s = dailySpend { d.set(s, forKey: Self.kSpend) } else { d.removeObject(forKey: Self.kSpend) }
         if let h = dailyHours { d.set(h, forKey: Self.kHours) } else { d.removeObject(forKey: Self.kHours) }
         d.set(lastCelebrated, forKey: Self.kCelebrated)
@@ -119,21 +123,23 @@ struct SobrietyData {
 
     // MARK: status
     func isSober(_ k: String) -> Bool {
+        if excluded.contains(k) { return false }   // explicitly marked not sober
         if checkins.contains(k) { return true }
         if let s = startDate { return k >= key(s) && k <= todayKey }
         return false
     }
 
-    var daysSober: Int {
+    /// Headline = current run of consecutive sober days ending today (honors edits).
+    var daysSober: Int { currentStreak }
+
+    /// First day of the current sober streak (for the "since" label), or nil.
+    var streakStartDate: Date? {
+        let n = currentStreak
+        guard n > 0 else { return nil }
         let cal = Self.calendar
-        if let s = startDate {
-            let start = cal.startOfDay(for: s)
-            let today = cal.startOfDay(for: Date())
-            if start <= today {
-                return (cal.dateComponents([.day], from: start, to: today).day ?? 0) + 1
-            }
-        }
-        return currentStreak
+        var day = cal.startOfDay(for: Date())
+        if !isSober(key(day)) { day = cal.date(byAdding: .day, value: -1, to: day)! }
+        return cal.date(byAdding: .day, value: -(n - 1), to: day)
     }
 
     var currentStreak: Int {
@@ -159,6 +165,7 @@ struct SobrietyData {
                 day = cal.date(byAdding: .day, value: 1, to: day)!
             }
         }
+        set.subtract(excluded)
         return Array(set)
     }
 
