@@ -43,6 +43,11 @@
         <div class="milestone-next" id="milestoneNext"></div>
       </section>
 
+      <!-- Personal "why" statement -->
+      <section class="why-card" id="whyCard">
+        <div class="why-quote" id="whyText"></div>
+      </section>
+
       <!-- Today's check-in -->
       <section class="checkin-card">
         <div class="checkin-text">
@@ -143,6 +148,19 @@
         <button id="editCloseBtn" class="btn-secondary">Done</button>
       </div>
       <p class="hint">Tip: you can also tap any day in the grid to toggle it.</p>
+    </div>
+  </div>
+
+  <!-- "My why" modal -->
+  <div id="whyModal" class="modal hidden">
+    <div class="modal-card">
+      <h2>Your reason</h2>
+      <p class="hint">Why do you want to be more sober? You'll see this at the top every day.</p>
+      <textarea id="whyInput" class="why-input" rows="4" maxlength="240" placeholder="e.g. To be present for my kids and wake up clear-headed."></textarea>
+      <div class="modal-actions">
+        <button id="whyClearBtn" class="btn-secondary">Clear</button>
+        <button id="whySaveBtn" class="btn-primary">Save</button>
+      </div>
     </div>
   </div>
 

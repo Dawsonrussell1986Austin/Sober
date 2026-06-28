@@ -53,7 +53,7 @@ function daysBetween(aKey, bKey) {
 
 /* ---------- storage ---------- */
 function load() {
-  const defaults = { startDate: null, checkins: {}, excluded: {}, dailySpend: null, dailyHours: null, lastCelebrated: 0 };
+  const defaults = { startDate: null, checkins: {}, excluded: {}, dailySpend: null, dailyHours: null, lastCelebrated: 0, why: "" };
   try {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) return Object.assign(defaults, JSON.parse(raw));
@@ -240,6 +240,18 @@ function renderMilestones() {
     </div>`).join("");
 }
 
+function renderWhy() {
+  const card = document.getElementById("whyCard");
+  const el = document.getElementById("whyText");
+  if (state.why && state.why.trim()) {
+    el.textContent = state.why;
+    card.classList.remove("empty");
+  } else {
+    el.textContent = "✎ Tap to add your reason for getting sober.";
+    card.classList.add("empty");
+  }
+}
+
 function renderTimeline() {
   const n = daysSober();
   const el = document.getElementById("timeline");
@@ -368,6 +380,7 @@ function renderGrid() {
 function renderAll() {
   renderCounter();
   renderStats();
+  renderWhy();
   renderSavings();
   renderMilestones();
   renderTimeline();
@@ -512,6 +525,7 @@ function createCalendar(container, opts) {
       const cell = document.createElement("button"); cell.type = "button"; cell.className = "cal-day"; cell.textContent = d;
       const disabled = opts.max && key > opts.max;
       if (disabled) cell.classList.add("disabled");
+      if (opts.sober && opts.sober(key)) cell.classList.add("sober");
       if (key === todayKey()) cell.classList.add("today");
       if (key === sel) cell.classList.add("selected");
       cell.onclick = () => { if (!disabled) { sel = key; opts.onSelect(key); build(); } };
@@ -537,6 +551,25 @@ function updateStartLabel(key) {
     : "Not set — pick the day you started.";
 }
 
+/* ---------- "my why" ---------- */
+const whyModal = document.getElementById("whyModal");
+document.getElementById("whyCard").addEventListener("click", () => {
+  document.getElementById("whyInput").value = state.why || "";
+  whyModal.classList.remove("hidden");
+  document.getElementById("whyInput").focus();
+});
+document.getElementById("whySaveBtn").addEventListener("click", () => {
+  state.why = document.getElementById("whyInput").value.trim();
+  save(state);
+  renderWhy();
+  whyModal.classList.add("hidden");
+  toast("Saved your reason 🧡");
+});
+document.getElementById("whyClearBtn").addEventListener("click", () => {
+  document.getElementById("whyInput").value = "";
+});
+whyModal.addEventListener("click", (e) => { if (e.target === whyModal) whyModal.classList.add("hidden"); });
+
 const modal = document.getElementById("settingsModal");
 function openSettings() {
   document.getElementById("dailySpendInput").value = state.dailySpend ?? DEFAULT_SPEND;
@@ -545,6 +578,7 @@ function openSettings() {
   if (!startCal) {
     startCal = createCalendar(document.getElementById("startCalendar"), {
       selected: state.startDate, max: todayKey(),
+      sober: (key) => isSober(key),
       onSelect: (key) => {
         state.startDate = key;
         save(state);
@@ -598,14 +632,15 @@ function refreshEditStatus() {
   const label = fromKey(key).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
   const sober = isSober(key);
   statusEl.innerHTML = `<b>${label}</b><br>` +
-    (sober ? '<span class="yes">● Marked sober</span>' : '<span class="no">○ Not logged</span>');
-  btn.textContent = sober ? "Mark as not sober" : "Mark as sober";
+    (sober ? '<span class="yes">● Sober day</span>' : '<span class="no">○ Not marked</span>');
+  btn.textContent = sober ? "I had a drink" : "I was sober";
 }
 function openEdit() {
   editSelected = toKey(new Date(Date.now() - MS_DAY)); // default to yesterday
   if (!editCal) {
     editCal = createCalendar(document.getElementById("editCalendar"), {
       selected: editSelected, max: todayKey(),
+      sober: (key) => isSober(key),
       onSelect: (key) => { editSelected = key; refreshEditStatus(); }
     });
   } else {
@@ -619,8 +654,9 @@ document.getElementById("editToggleBtn").addEventListener("click", () => {
   const key = editSelected;
   if (!key || key > todayKey()) return;
   toggleDay(key);
+  if (editCal) editCal.setSelected(key); // rebuild so the day's color updates
   refreshEditStatus();
-  toast(isSober(key) ? "Marked sober 🌱" : "Updated");
+  toast(isSober(key) ? "Marked sober 🌱" : "Logged — keep going 💪");
 });
 document.getElementById("editCloseBtn").addEventListener("click", () => editModal.classList.add("hidden"));
 editModal.addEventListener("click", (e) => { if (e.target === editModal) editModal.classList.add("hidden"); });
