@@ -2,13 +2,24 @@
  * Data model (localStorage key "sober.v1"):
  *   { startDate: "YYYY-MM-DD" | null, checkins: { "YYYY-MM-DD": true } }
  * A day counts as "sober" if it is on/after startDate and on/before today,
- * OR if it was explicitly checked in. The grid colors days by that status.
+ * OR if it was explicitly checked in.
  */
 
 const STORE_KEY = "sober.v1";
 const MS_DAY = 86400000;
 
-/* ---------- date helpers (all local time, no timezone surprises) ---------- */
+/* Milestone thresholds (days) used by the ring's "next milestone". */
+const MILESTONES = [7, 14, 30, 60, 90, 180, 270, 365];
+/* Badges shown in the achievements row. */
+const BADGES = [
+  { d: 7,   icon: "🌱", label: "1 week" },
+  { d: 30,  icon: "⭐", label: "1 month" },
+  { d: 90,  icon: "🔥", label: "90 days" },
+  { d: 180, icon: "💪", label: "6 months" },
+  { d: 365, icon: "🏆", label: "1 year" },
+];
+
+/* ---------- date helpers (all local time) ---------- */
 function todayKey() { return toKey(new Date()); }
 function toKey(d) {
   const y = d.getFullYear();
@@ -21,7 +32,6 @@ function fromKey(k) {
   return new Date(y, m - 1, d);
 }
 function daysBetween(aKey, bKey) {
-  // whole days from a -> b (b - a), based on local midnight
   return Math.round((fromKey(bKey) - fromKey(aKey)) / MS_DAY);
 }
 
@@ -33,55 +43,41 @@ function load() {
   } catch (e) {}
   return { startDate: null, checkins: {} };
 }
-function save(state) {
-  localStorage.setItem(STORE_KEY, JSON.stringify(state));
-}
+function save(state) { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
 
 let state = load();
 let viewYear = new Date().getFullYear();
 
 /* ---------- core logic ---------- */
-// Is this date key considered a sober day?
 function isSober(key) {
   if (state.checkins[key]) return true;
-  if (state.startDate) {
-    return key >= state.startDate && key <= todayKey();
-  }
+  if (state.startDate) return key >= state.startDate && key <= todayKey();
   return false;
 }
 
-// Days sober counter: continuous run ending today.
 function daysSober() {
   const t = todayKey();
   if (state.startDate && state.startDate <= t) {
-    return daysBetween(state.startDate, t) + 1; // inclusive of start day
+    return daysBetween(state.startDate, t) + 1;
   }
-  // fall back to current streak of check-ins ending today/yesterday
   return currentStreak();
 }
 
-// Longest run of consecutive sober days across all data.
 function bestStreak() {
   const keys = soberKeys();
   if (keys.length === 0) return 0;
   keys.sort();
   let best = 1, run = 1;
   for (let i = 1; i < keys.length; i++) {
-    if (daysBetween(keys[i - 1], keys[i]) === 1) {
-      run++;
-    } else {
-      run = 1;
-    }
+    run = daysBetween(keys[i - 1], keys[i]) === 1 ? run + 1 : 1;
     if (run > best) best = run;
   }
   return best;
 }
 
-// Streak of consecutive sober days ending today (or yesterday).
 function currentStreak() {
   let count = 0;
   let d = new Date();
-  // if today not yet sober, allow streak to end yesterday
   if (!isSober(toKey(d))) d = new Date(Date.now() - MS_DAY);
   while (isSober(toKey(d))) {
     count++;
@@ -90,7 +86,6 @@ function currentStreak() {
   return count;
 }
 
-// All sober day keys (checkins + the start-date range up to today).
 function soberKeys() {
   const set = new Set(Object.keys(state.checkins).filter(k => state.checkins[k]));
   if (state.startDate) {
@@ -109,17 +104,54 @@ function totalDays() {
   return soberKeys().filter(k => k <= todayKey()).length;
 }
 
+/* Next milestone above `days`, with the previous threshold for ring progress. */
+function nextMilestone(days) {
+  let prev = 0;
+  for (const m of MILESTONES) {
+    if (days < m) return { next: m, prev };
+    prev = m;
+  }
+  // beyond a year: next whole-year mark
+  const years = Math.floor(days / 365) + 1;
+  return { next: years * 365, prev: (years - 1) * 365 };
+}
+
+function milestoneLabel(d) {
+  const map = { 7: "1 week", 14: "2 weeks", 30: "1 month", 60: "2 months",
+                90: "90 days", 180: "6 months", 270: "9 months", 365: "1 year" };
+  if (map[d]) return map[d];
+  const years = Math.round(d / 365);
+  return years === 1 ? "1 year" : `${years} years`;
+}
+
 /* ---------- rendering ---------- */
 function renderCounter() {
   const n = daysSober();
   document.getElementById("dayCount").textContent = n;
   document.getElementById("dayLabel").textContent = n === 1 ? "day sober" : "days sober";
+
   const sinceEl = document.getElementById("sinceText");
   if (state.startDate) {
     const d = fromKey(state.startDate);
-    sinceEl.textContent = "since " + d.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
+    sinceEl.textContent = "since " + d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
   } else {
-    sinceEl.textContent = "Set your start date in settings ⚙";
+    sinceEl.textContent = "tap ⚙ to set your start date";
+  }
+
+  // progress ring toward the next milestone
+  const { next, prev } = nextMilestone(n);
+  const progress = Math.max(0, Math.min(1, (n - prev) / (next - prev)));
+  const ring = document.getElementById("ringProgress");
+  const circ = 2 * Math.PI * 108;
+  ring.style.strokeDasharray = `${circ}`;
+  ring.style.strokeDashoffset = `${circ * (1 - progress)}`;
+
+  const remaining = next - n;
+  const nextEl = document.getElementById("milestoneNext");
+  if (n === 0 && !state.startDate) {
+    nextEl.innerHTML = "Your journey starts today.";
+  } else {
+    nextEl.innerHTML = `<b>${remaining}</b> ${remaining === 1 ? "day" : "days"} to <b>${milestoneLabel(next)}</b>`;
   }
 }
 
@@ -127,6 +159,16 @@ function renderStats() {
   document.getElementById("statCurrent").textContent = currentStreak();
   document.getElementById("statBest").textContent = bestStreak();
   document.getElementById("statTotal").textContent = totalDays();
+}
+
+function renderMilestones() {
+  const n = daysSober();
+  const el = document.getElementById("milestones");
+  el.innerHTML = BADGES.map(b => `
+    <div class="badge ${n >= b.d ? "reached" : ""}" title="${b.label}">
+      <div class="badge-icon">${b.icon}</div>
+      <div class="badge-label">${b.label}</div>
+    </div>`).join("");
 }
 
 function renderCheckin() {
@@ -157,17 +199,34 @@ function renderGrid() {
   const jan1 = new Date(viewYear, 0, 1);
   const dec31 = new Date(viewYear, 11, 31);
   const t = todayKey();
+  const leadingBlanks = jan1.getDay();
 
-  // Pad start so column 0 begins on Sunday.
-  const leadingBlanks = jan1.getDay(); // 0 = Sun
+  const daysInYear = Math.round((dec31 - jan1) / MS_DAY) + 1;
+  const numCols = Math.ceil((leadingBlanks + daysInYear) / 7);
+
+  // Size cells (and gap) to fit the whole year across the card width — no scroll.
+  const avail = grid.parentElement.clientWidth || (document.querySelector(".grid-card").clientWidth - 32);
+  const gapsTotal = numCols - 1;
+  // first pass: estimate cell, then scale the gap to it, then recompute
+  let cell = Math.floor((avail - gapsTotal * 2) / numCols);
+  let gap = Math.max(1, Math.min(3, Math.round(cell / 4)));
+  cell = Math.floor((avail - gapsTotal * gap) / numCols);
+  cell = Math.max(3, Math.min(cell, 15));
+  // safety: shrink until the row fits with no overflow
+  while (numCols * cell + gapsTotal * gap > avail && cell > 3) cell--;
+  document.documentElement.style.setProperty("--cell", cell + "px");
+  document.documentElement.style.setProperty("--cell-gap", gap + "px");
+  const pitch = cell + gap;
+
   for (let i = 0; i < leadingBlanks; i++) {
-    const cell = document.createElement("div");
-    cell.className = "cell empty";
-    grid.appendChild(cell);
+    const c = document.createElement("div");
+    c.className = "cell empty";
+    grid.appendChild(c);
   }
 
-  const monthCols = {}; // month -> first column index
+  const monthCols = {};
   let dayIndex = leadingBlanks;
+  let soberThisYear = 0;
 
   for (let d = new Date(jan1); d <= dec31; d = new Date(d.getTime() + MS_DAY)) {
     const key = toKey(d);
@@ -175,32 +234,33 @@ function renderGrid() {
     const month = d.getMonth();
     if (monthCols[month] === undefined) monthCols[month] = col;
 
-    const cell = document.createElement("div");
-    cell.className = "cell";
-    if (key <= t && isSober(key)) {
-      cell.classList.add("l4"); // sober = strong green
-    }
-    if (key === t) cell.classList.add("today");
-    cell.title = fromKey(key).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" })
-      + (isSober(key) && key <= t ? " · sober" : "");
-    grid.appendChild(cell);
+    const c = document.createElement("div");
+    c.className = "cell";
+    if (key <= t && isSober(key)) { c.classList.add("l4"); soberThisYear++; }
+    if (key === t) c.classList.add("today");
+    grid.appendChild(c);
     dayIndex++;
   }
 
-  // Month labels positioned by column.
   const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const colWidth = 11 + 3; // cell + gap
   Object.entries(monthCols).forEach(([m, col]) => {
+    // skip a label if it would overlap the previous month's (very small cells)
     const span = document.createElement("span");
     span.textContent = monthNames[m];
-    span.style.left = (col * colWidth) + "px";
+    span.style.left = (col * pitch) + "px";
     monthLabels.appendChild(span);
   });
+
+  const countEl = document.getElementById("gridCount");
+  if (countEl) {
+    countEl.textContent = `${soberThisYear} sober ${soberThisYear === 1 ? "day" : "days"} in ${viewYear}`;
+  }
 }
 
 function renderAll() {
   renderCounter();
   renderStats();
+  renderMilestones();
   renderCheckin();
   renderGrid();
 }
@@ -216,20 +276,15 @@ function toast(msg) {
 
 document.getElementById("checkinBtn").addEventListener("click", () => {
   const key = todayKey();
-  if (state.checkins[key] || (state.startDate && key >= state.startDate)) {
-    // already counted via start date — make sure it's explicitly stored too
-    if (!isSober(key)) {
-      state.checkins[key] = true;
-    }
-    // If start date already covers today, nothing to toggle off; just acknowledge.
-    if (!state.checkins[key]) state.checkins[key] = true;
+  if (isSober(key)) {
+    state.checkins[key] = true;
     save(state);
     renderAll();
     toast("Already counted today 💪");
     return;
   }
   state.checkins[key] = true;
-  if (!state.startDate) state.startDate = key; // first ever check-in seeds the start
+  if (!state.startDate) state.startDate = key;
   save(state);
   renderAll();
   toast("Logged today. Proud of you. 🌱");
@@ -249,7 +304,7 @@ document.getElementById("startDateInput").addEventListener("change", (e) => {
   if (v > todayKey()) { toast("Start date can't be in the future"); e.target.value = state.startDate || ""; return; }
   state.startDate = v;
   save(state);
-  viewYear = fromKey(v).getFullYear() > viewYear ? viewYear : new Date().getFullYear();
+  viewYear = new Date().getFullYear();
   renderAll();
   toast("Start date saved");
 });
@@ -270,20 +325,15 @@ document.getElementById("nextYear").addEventListener("click", () => {
   if (viewYear < new Date().getFullYear() + 1) { viewYear++; renderGrid(); }
 });
 
+/* Re-fit the grid when the viewport width changes. */
+let resizeTimer;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(renderGrid, 120);
+});
+
 /* ---------- init ---------- */
 renderAll();
-// Scroll grid so today's column is comfortably in view (not the empty year-end).
-requestAnimationFrame(() => {
-  const sc = document.querySelector(".grid-scroll");
-  if (!sc) return;
-  const todayCell = sc.querySelector(".cell.today");
-  if (todayCell) {
-    const target = todayCell.offsetLeft - sc.clientWidth * 0.6;
-    sc.scrollLeft = Math.max(0, target);
-  } else {
-    sc.scrollLeft = sc.scrollWidth;
-  }
-});
 
 /* ---------- PWA service worker ---------- */
 if ("serviceWorker" in navigator) {

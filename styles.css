@@ -14,12 +14,20 @@
   --l2: #006d32;
   --l3: #26a641;
   --l4: #39d353;
+
+  /* activity grid cell size (set dynamically in JS to fit the year) */
+  --cell: 11px;
+  --cell-gap: 3px;
 }
 
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Hide scrollbars everywhere — the UI never relies on a visible bar */
+*::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; -ms-overflow-style: none; }
 
 html, body {
   margin: 0;
@@ -40,7 +48,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 0 20px;
+  padding: 8px 0 18px;
 }
 
 .logo {
@@ -61,18 +69,56 @@ html, body {
 }
 .icon-btn:active { background: var(--surface-2); }
 
-/* Counter card */
-.counter-card {
-  background: radial-gradient(circle at 50% 0%, rgba(46,160,67,0.15), transparent 70%), var(--surface);
+/* ---------- Hero: progress ring ---------- */
+.hero {
+  background: radial-gradient(circle at 50% 18%, rgba(46,160,67,0.14), transparent 62%), var(--surface);
   border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 36px 20px 30px;
+  border-radius: 22px;
+  padding: 26px 20px 22px;
+  margin-bottom: 14px;
   text-align: center;
-  margin-bottom: 16px;
+}
+
+.ring-wrap {
+  position: relative;
+  width: 240px;
+  max-width: 78vw;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+}
+
+.ring {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg); /* start progress at 12 o'clock */
+}
+.ring-track {
+  fill: none;
+  stroke: var(--surface-2);
+  stroke-width: 12;
+}
+.ring-progress {
+  fill: none;
+  stroke: url(#ringGrad);
+  stroke-width: 12;
+  stroke-linecap: round;
+  /* dasharray/offset set in JS */
+  transition: stroke-dashoffset 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  filter: drop-shadow(0 0 6px var(--accent-glow));
+}
+
+.ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
 }
 
 .counter-number {
-  font-size: 84px;
+  font-size: 76px;
   font-weight: 800;
   line-height: 1;
   letter-spacing: -3px;
@@ -80,24 +126,31 @@ html, body {
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 40px var(--accent-glow);
 }
 
 .counter-label {
-  font-size: 17px;
+  font-size: 15px;
   color: var(--text-dim);
   margin-top: 8px;
   font-weight: 500;
 }
 
 .counter-since {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-dim);
-  margin-top: 6px;
-  opacity: 0.7;
+  margin-top: 4px;
+  opacity: 0.75;
+  max-width: 150px;
 }
 
-/* Check-in card */
+.milestone-next {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.milestone-next b { color: var(--text); font-weight: 600; }
+
+/* ---------- Check-in card ---------- */
 .checkin-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -107,18 +160,11 @@ html, body {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
-.checkin-title {
-  font-size: 15px;
-  font-weight: 600;
-}
-.checkin-sub {
-  font-size: 13px;
-  color: var(--text-dim);
-  margin-top: 3px;
-}
+.checkin-title { font-size: 15px; font-weight: 600; }
+.checkin-sub { font-size: 13px; color: var(--text-dim); margin-top: 3px; }
 
 .checkin-btn {
   flex-shrink: 0;
@@ -139,11 +185,11 @@ html, body {
   border: 1px solid var(--accent);
 }
 
-/* Stats */
+/* ---------- Stats ---------- */
 .stats-row {
   display: flex;
   gap: 10px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 .stat {
   flex: 1;
@@ -153,39 +199,59 @@ html, body {
   padding: 14px 8px;
   text-align: center;
 }
-.stat-value {
-  font-size: 24px;
-  font-weight: 700;
-}
-.stat-label {
-  font-size: 11px;
-  color: var(--text-dim);
-  margin-top: 4px;
-}
+.stat-value { font-size: 24px; font-weight: 700; }
+.stat-label { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
 
-/* Grid card */
+/* ---------- Milestone badges ---------- */
+.milestones {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.badge {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 4px 8px;
+  text-align: center;
+  position: relative;
+  transition: border-color 0.3s;
+}
+.badge.reached {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, rgba(46,160,67,0.14), transparent), var(--surface);
+}
+.badge-icon {
+  font-size: 16px;
+  line-height: 1;
+  filter: grayscale(1) opacity(0.45);
+}
+.badge.reached .badge-icon { filter: none; }
+.badge-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 5px;
+  font-weight: 600;
+}
+.badge.reached .badge-label { color: var(--text); }
+
+/* ---------- Activity grid (fits full year, no scroll) ---------- */
 .grid-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 18px 16px;
+  padding: 18px 16px 16px;
 }
 
 .grid-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
-.grid-title {
-  font-size: 15px;
-  font-weight: 600;
-}
-.year-nav {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
+.grid-title { font-size: 15px; font-weight: 600; }
+.year-nav { display: flex; align-items: center; gap: 4px; }
 .year-btn {
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -198,67 +264,33 @@ html, body {
   line-height: 1;
 }
 .year-btn:active { background: var(--border); }
-.year-label {
-  font-size: 14px;
-  font-weight: 600;
-  min-width: 46px;
-  text-align: center;
-}
+.year-label { font-size: 14px; font-weight: 600; min-width: 46px; text-align: center; }
 
-.grid-scroll {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 4px;
-}
-.grid-wrap {
-  display: inline-block;
-  min-width: 100%;
-}
+.grid-wrap { width: 100%; }
 
 .month-labels {
-  display: grid;
-  grid-auto-flow: column;
+  position: relative;
+  height: 12px;
+  margin-bottom: 5px;
   font-size: 10px;
   color: var(--text-dim);
-  margin-left: 26px;
-  margin-bottom: 4px;
-  height: 12px;
-  position: relative;
 }
-.month-labels span {
-  position: absolute;
-  white-space: nowrap;
-}
-
-.grid-body {
-  display: flex;
-  gap: 4px;
-}
-.day-labels {
-  display: grid;
-  grid-template-rows: repeat(7, 11px);
-  gap: 3px;
-  font-size: 9px;
-  color: var(--text-dim);
-  width: 22px;
-}
-.day-labels span {
-  line-height: 11px;
-  height: 11px;
-}
+.month-labels span { position: absolute; white-space: nowrap; top: 0; }
 
 .grid {
   display: grid;
   grid-auto-flow: column;
-  grid-template-rows: repeat(7, 11px);
-  gap: 3px;
+  grid-template-rows: repeat(7, var(--cell));
+  grid-auto-columns: var(--cell);
+  gap: var(--cell-gap);
+  justify-content: start;
 }
 .cell {
-  width: 11px;
-  height: 11px;
+  width: var(--cell);
+  height: var(--cell);
   border-radius: 2px;
   background: var(--l0);
-  outline: 1px solid rgba(255,255,255,0.02);
+  outline: 1px solid rgba(255,255,255,0.025);
   outline-offset: -1px;
 }
 .cell.empty { background: transparent; outline: none; }
@@ -268,26 +300,28 @@ html, body {
 .cell.l4 { background: var(--l4); }
 .cell.today { box-shadow: 0 0 0 1.5px var(--text); }
 
+.grid-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+}
+.grid-count { font-size: 11px; color: var(--text-dim); }
+
 .legend {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 4px;
-  margin-top: 12px;
   font-size: 11px;
   color: var(--text-dim);
 }
-.legend-cell {
-  width: 11px;
-  height: 11px;
-  border-radius: 2px;
-}
+.legend-cell { width: 11px; height: 11px; border-radius: 2px; }
 .legend-cell.l0 { background: var(--l0); outline: 1px solid var(--border); }
 .legend-cell.l1 { background: var(--l1); }
 .legend-cell.l2 { background: var(--l2); }
 .legend-cell.l3 { background: var(--l3); }
 
-/* Modal */
+/* ---------- Modal ---------- */
 .modal {
   position: fixed;
   inset: 0;
@@ -312,10 +346,7 @@ html, body {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
-.modal-card h2 {
-  margin: 0 0 18px;
-  font-size: 20px;
-}
+.modal-card h2 { margin: 0 0 18px; font-size: 20px; }
 .field {
   display: flex;
   flex-direction: column;
@@ -332,16 +363,8 @@ html, body {
   padding: 12px;
   font-size: 16px;
 }
-.hint {
-  font-size: 13px;
-  color: var(--text-dim);
-  line-height: 1.5;
-  margin: 0 0 20px;
-}
-.modal-actions {
-  display: flex;
-  gap: 10px;
-}
+.hint { font-size: 13px; color: var(--text-dim); line-height: 1.5; margin: 0 0 20px; }
+.modal-actions { display: flex; gap: 10px; }
 .btn-primary, .btn-danger {
   flex: 1;
   border: none;
@@ -351,17 +374,10 @@ html, body {
   font-weight: 600;
   cursor: pointer;
 }
-.btn-primary {
-  background: var(--accent);
-  color: #fff;
-}
-.btn-danger {
-  background: transparent;
-  color: #f85149;
-  border: 1px solid #f85149;
-}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-danger { background: transparent; color: #f85149; border: 1px solid #f85149; }
 
-/* Toast */
+/* ---------- Toast ---------- */
 .toast {
   position: fixed;
   bottom: calc(env(safe-area-inset-bottom) + 24px);

@@ -21,11 +21,26 @@
     </header>
 
     <main class="main">
-      <!-- Big counter -->
-      <section class="counter-card">
-        <div class="counter-number" id="dayCount">0</div>
-        <div class="counter-label" id="dayLabel">days sober</div>
-        <div class="counter-since" id="sinceText"></div>
+      <!-- Hero: progress ring with day counter -->
+      <section class="hero">
+        <div class="ring-wrap">
+          <svg class="ring" viewBox="0 0 240 240" aria-hidden="true">
+            <defs>
+              <linearGradient id="ringGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#39d353" />
+                <stop offset="100%" stop-color="#2ea043" />
+              </linearGradient>
+            </defs>
+            <circle class="ring-track" cx="120" cy="120" r="108" />
+            <circle class="ring-progress" id="ringProgress" cx="120" cy="120" r="108" />
+          </svg>
+          <div class="ring-center">
+            <div class="counter-number" id="dayCount">0</div>
+            <div class="counter-label" id="dayLabel">days sober</div>
+            <div class="counter-since" id="sinceText"></div>
+          </div>
+        </div>
+        <div class="milestone-next" id="milestoneNext"></div>
       </section>
 
       <!-- Today's check-in -->
@@ -53,7 +68,10 @@
         </div>
       </section>
 
-      <!-- GitHub-style activity grid -->
+      <!-- Milestone badges -->
+      <section class="milestones" id="milestones"></section>
+
+      <!-- GitHub-style activity grid (fits full year, no scroll) -->
       <section class="grid-card">
         <div class="grid-header">
           <span class="grid-title">Activity</span>
@@ -63,24 +81,20 @@
             <button id="nextYear" class="year-btn" aria-label="Next year">›</button>
           </div>
         </div>
-        <div class="grid-scroll">
-          <div class="grid-wrap">
-            <div class="month-labels" id="monthLabels"></div>
-            <div class="grid-body">
-              <div class="day-labels">
-                <span></span><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span>
-              </div>
-              <div class="grid" id="grid"></div>
-            </div>
-          </div>
+        <div class="grid-wrap" id="gridWrap">
+          <div class="month-labels" id="monthLabels"></div>
+          <div class="grid" id="grid"></div>
         </div>
-        <div class="legend">
-          <span>Less</span>
-          <span class="legend-cell l0"></span>
-          <span class="legend-cell l1"></span>
-          <span class="legend-cell l2"></span>
-          <span class="legend-cell l3"></span>
-          <span>More</span>
+        <div class="grid-footer">
+          <span class="grid-count" id="gridCount"></span>
+          <div class="legend">
+            <span>Less</span>
+            <span class="legend-cell l0"></span>
+            <span class="legend-cell l1"></span>
+            <span class="legend-cell l2"></span>
+            <span class="legend-cell l3"></span>
+            <span>More</span>
+          </div>
         </div>
       </section>
     </main>
