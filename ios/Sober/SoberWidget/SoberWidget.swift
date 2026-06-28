@@ -80,7 +80,7 @@ struct SoberWidgetEntryView: View {
             VStack(spacing: 2) {
                 Text("\(entry.days)")
                     .font(.system(size: 46, weight: .heavy, design: .rounded))
-                    .foregroundStyle(LinearGradient(colors: [Theme.level4, Theme.accent], startPoint: .top, endPoint: .bottom))
+                    .foregroundStyle(LinearGradient(colors: [Theme.accent, Theme.accent2], startPoint: .top, endPoint: .bottom))
                 Text(entry.days == 1 ? "day sober" : "days sober")
                     .font(.system(size: 13, weight: .medium)).foregroundColor(Theme.textDim)
                 Text("\(entry.remaining) to \(entry.nextLabel)")
@@ -97,7 +97,7 @@ struct SoberWidgetEntryView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(entry.days)")
                         .font(.system(size: 40, weight: .heavy, design: .rounded))
-                        .foregroundStyle(LinearGradient(colors: [Theme.level4, Theme.accent], startPoint: .top, endPoint: .bottom))
+                        .foregroundStyle(LinearGradient(colors: [Theme.accent, Theme.accent2], startPoint: .top, endPoint: .bottom))
                     Text(entry.days == 1 ? "day sober" : "days sober")
                         .font(.system(size: 12, weight: .medium)).foregroundColor(Theme.textDim)
                     Text("🔥 \(entry.currentStreak) streak")

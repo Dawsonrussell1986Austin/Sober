@@ -76,7 +76,7 @@ struct ContentView: View {
                 Circle()
                     .trim(from: 0, to: ringProgress)
                     .stroke(
-                        LinearGradient(colors: [Theme.level4, Theme.accent], startPoint: .top, endPoint: .bottom),
+                        LinearGradient(colors: [Theme.accent, Theme.accent2], startPoint: .top, endPoint: .bottom),
                         style: StrokeStyle(lineWidth: 12, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
@@ -85,7 +85,7 @@ struct ContentView: View {
                 VStack(spacing: 2) {
                     Text("\(n)")
                         .font(.system(size: 72, weight: .heavy, design: .rounded))
-                        .foregroundStyle(LinearGradient(colors: [Theme.level4, Theme.accent], startPoint: .top, endPoint: .bottom))
+                        .foregroundStyle(LinearGradient(colors: [Theme.accent, Theme.accent2], startPoint: .top, endPoint: .bottom))
                         .contentTransition(.numericText())
                     Text(n == 1 ? "day sober" : "days sober")
                         .font(.system(size: 15, weight: .medium)).foregroundColor(Theme.textDim)
