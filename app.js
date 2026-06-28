@@ -20,6 +20,21 @@ const BADGES = [
   { d: 365, icon: "🏆", label: "1 year" },
 ];
 
+/* Science-backed recovery timeline. Copy condensed from cited sources; claims
+ * kept conservative where evidence is self-reported (see Sources in the app). */
+const TIMELINE = [
+  { d: 1,   label: "24 hours",  title: "The clock starts",            detail: "Alcohol clears your system; hydration and headaches start to ease.", src: "Cleveland Clinic" },
+  { d: 3,   label: "72 hours",  title: "Past the hardest part",       detail: "Acute withdrawal peaks, then the physical symptoms begin to settle.", src: "Cleveland Clinic" },
+  { d: 7,   label: "Week 1",    title: "Sleep & hydration rebound",   detail: "Acute withdrawal resolves; sleep starts to normalize and skin often looks brighter as you rehydrate.", src: "NIAAA · Cleveland Clinic" },
+  { d: 14,  label: "2 weeks",   title: "Gut settles, BP eases",       detail: "Bloating eases as your gut lining recovers; blood pressure falls over roughly 2–4 weeks.", src: "Lancet Public Health, 2017" },
+  { d: 21,  label: "3 weeks",   title: "Momentum building",           detail: "Energy and digestion keep improving — but 21 days forming a habit is a myth (see day 66).", src: "Lally et al., 2010" },
+  { d: 30,  label: "1 month",   title: "Liver & metabolism improve",  detail: "A month off alcohol measurably improves liver health, insulin resistance, weight and blood pressure.", src: "BMJ Open, 2018 (Royal Free)" },
+  { d: 66,  label: "66 days",   title: "A habit actually forms",      detail: "Research puts automatic habit formation at a median of 66 days — the real number behind “21 days.”", src: "Lally et al., 2010" },
+  { d: 90,  label: "3 months",  title: "Your brain keeps rewiring",   detail: "Focus and memory keep improving; cravings ease over months as your reward system slowly rebalances.", src: "NIAAA · Volkow et al." },
+  { d: 180, label: "6 months",  title: "Cravings loosen their grip",  detail: "Mood and reward circuitry keep recalibrating; cravings generally lessen substantially.", src: "NIAAA" },
+  { d: 365, label: "1 year",    title: "Long-term risk drops",        detail: "Sustained sobriety lowers your risk of alcohol-related disease, including several cancers, over time.", src: "U.S. Surgeon General, 2025" },
+];
+
 /* ---------- date helpers (all local time) ---------- */
 function todayKey() { return toKey(new Date()); }
 function toKey(d) {
@@ -38,7 +53,7 @@ function daysBetween(aKey, bKey) {
 
 /* ---------- storage ---------- */
 function load() {
-  const defaults = { startDate: null, checkins: {}, dailySpend: null, dailyHours: null, lastCelebrated: 0 };
+  const defaults = { startDate: null, checkins: {}, excluded: {}, dailySpend: null, dailyHours: null, lastCelebrated: 0 };
   try {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) return Object.assign(defaults, JSON.parse(raw));
@@ -52,17 +67,39 @@ let viewYear = new Date().getFullYear();
 
 /* ---------- core logic ---------- */
 function isSober(key) {
+  if (state.excluded && state.excluded[key]) return false; // explicitly marked not sober
   if (state.checkins[key]) return true;
   if (state.startDate) return key >= state.startDate && key <= todayKey();
   return false;
 }
 
+// Headline = current run of consecutive sober days ending today (honors edits).
 function daysSober() {
-  const t = todayKey();
-  if (state.startDate && state.startDate <= t) {
-    return daysBetween(state.startDate, t) + 1;
-  }
   return currentStreak();
+}
+
+// First day of the current sober streak (for the "since" label), or null.
+function streakStartKey() {
+  const n = currentStreak();
+  if (n === 0) return null;
+  let d = new Date();
+  if (!isSober(toKey(d))) d = new Date(Date.now() - MS_DAY);
+  return toKey(new Date(d.getTime() - (n - 1) * MS_DAY));
+}
+
+// Toggle whether a given day (today or past) counts as sober.
+function toggleDay(key) {
+  if (key > todayKey()) return; // can't edit the future
+  if (!state.excluded) state.excluded = {};
+  if (isSober(key)) {
+    delete state.checkins[key];
+    state.excluded[key] = true;
+  } else {
+    delete state.excluded[key];
+    state.checkins[key] = true;
+  }
+  save(state);
+  renderAll();
 }
 
 function bestStreak() {
@@ -99,6 +136,7 @@ function soberKeys() {
       d = new Date(d.getTime() + MS_DAY);
     }
   }
+  if (state.excluded) Object.keys(state.excluded).forEach(k => { if (state.excluded[k]) set.delete(k); });
   return [...set];
 }
 
@@ -133,11 +171,12 @@ function renderCounter() {
   document.getElementById("dayLabel").textContent = n === 1 ? "day sober" : "days sober";
 
   const sinceEl = document.getElementById("sinceText");
-  if (state.startDate) {
-    const d = fromKey(state.startDate);
+  const startKey = streakStartKey();
+  if (startKey) {
+    const d = fromKey(startKey);
     sinceEl.textContent = "since " + d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
   } else {
-    sinceEl.textContent = "tap ⚙ to set your start date";
+    sinceEl.textContent = "tap a day or check in to start";
   }
 
   // progress ring toward the next milestone
@@ -199,6 +238,40 @@ function renderMilestones() {
       <div class="badge-icon">${b.icon}</div>
       <div class="badge-label">${b.label}</div>
     </div>`).join("");
+}
+
+function renderTimeline() {
+  const n = daysSober();
+  const el = document.getElementById("timeline");
+  const nextEl = document.getElementById("nextBenefit");
+  const nextItem = TIMELINE.find(t => n < t.d);
+
+  if (nextEl) {
+    if (nextItem) {
+      const left = nextItem.d - n;
+      nextEl.innerHTML = `<div class="nb-title">Next up in <b>${left} ${left === 1 ? "day" : "days"}</b> · ${nextItem.label}: ${nextItem.title}</div>
+        <div class="nb-detail">${nextItem.detail}</div>`;
+      nextEl.style.display = "";
+    } else {
+      nextEl.innerHTML = `<div class="nb-title">You've passed every milestone here. 🏆</div>
+        <div class="nb-detail">Your body and brain keep healing well beyond a year of sobriety.</div>`;
+    }
+  }
+
+  el.innerHTML = TIMELINE.map(t => {
+    const reached = n >= t.d;
+    const isNext = nextItem && t.d === nextItem.d;
+    const left = t.d - n;
+    const when = reached ? "✓ reached" : `in ${left}d`;
+    return `<div class="tl-row ${reached ? "reached" : ""} ${isNext ? "next" : ""}">
+      <div class="tl-rail"><div class="tl-dot">${reached ? "✓" : ""}</div></div>
+      <div class="tl-body">
+        <div class="tl-head">${t.label} · ${t.title}<span class="tl-when">${when}</span></div>
+        <div class="tl-detail">${t.detail}</div>
+        <div class="tl-src">${t.src}</div>
+      </div>
+    </div>`;
+  }).join("");
 }
 
 function renderCheckin() {
@@ -268,6 +341,11 @@ function renderGrid() {
     c.className = "cell";
     if (key <= t && isSober(key)) { c.classList.add("l4"); soberThisYear++; }
     if (key === t) c.classList.add("today");
+    if (key <= t) {
+      c.classList.add("editable");
+      c.title = fromKey(key).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+      c.addEventListener("click", () => toggleDay(key));
+    }
     grid.appendChild(c);
     dayIndex++;
   }
@@ -292,6 +370,7 @@ function renderAll() {
   renderStats();
   renderSavings();
   renderMilestones();
+  renderTimeline();
   renderCheckin();
   renderGrid();
   maybeCelebrate();
@@ -323,7 +402,7 @@ function burstConfetti() {
   canvas.classList.add("active");
 
   const W = window.innerWidth, H = window.innerHeight;
-  const colors = ["#39d353", "#2ea043", "#26a641", "#e6edf3", "#0e4429"];
+  const colors = ["#ff7a1f", "#ff3d2e", "#ffae42", "#f6efea", "#d65512"];
   const N = 140;
   const parts = Array.from({ length: N }, () => ({
     x: W / 2 + (Math.random() - 0.5) * W * 0.3,
@@ -440,6 +519,39 @@ document.getElementById("resetBtn").addEventListener("click", () => {
     toast("Data reset");
   }
 });
+
+/* ---------- edit a past day ---------- */
+const editModal = document.getElementById("editModal");
+const editDateInput = document.getElementById("editDateInput");
+
+function refreshEditStatus() {
+  const key = editDateInput.value;
+  const statusEl = document.getElementById("editStatus");
+  const btn = document.getElementById("editToggleBtn");
+  if (!key) { statusEl.textContent = ""; return; }
+  const label = fromKey(key).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  const sober = isSober(key);
+  statusEl.innerHTML = `<b>${label}</b><br>` +
+    (sober ? '<span class="yes">● Marked sober</span>' : '<span class="no">○ Not logged</span>');
+  btn.textContent = sober ? "Mark as not sober" : "Mark as sober";
+}
+function openEdit() {
+  editDateInput.max = todayKey();
+  editDateInput.value = toKey(new Date(Date.now() - MS_DAY)); // default to yesterday
+  refreshEditStatus();
+  editModal.classList.remove("hidden");
+}
+document.getElementById("editDayBtn").addEventListener("click", openEdit);
+editDateInput.addEventListener("change", refreshEditStatus);
+document.getElementById("editToggleBtn").addEventListener("click", () => {
+  const key = editDateInput.value;
+  if (!key || key > todayKey()) return;
+  toggleDay(key);
+  refreshEditStatus();
+  toast(isSober(key) ? "Marked sober 🌱" : "Updated");
+});
+document.getElementById("editCloseBtn").addEventListener("click", () => editModal.classList.add("hidden"));
+editModal.addEventListener("click", (e) => { if (e.target === editModal) editModal.classList.add("hidden"); });
 
 document.getElementById("prevYear").addEventListener("click", () => { viewYear--; renderGrid(); });
 document.getElementById("nextYear").addEventListener("click", () => {

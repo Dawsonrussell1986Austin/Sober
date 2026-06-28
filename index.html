@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#0d1117" />
+  <meta name="theme-color" content="#0f0b0a" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Sober" />
@@ -26,9 +26,9 @@
         <div class="ring-wrap">
           <svg class="ring" viewBox="0 0 240 240" aria-hidden="true">
             <defs>
-              <linearGradient id="ringGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#39d353" />
-                <stop offset="100%" stop-color="#2ea043" />
+              <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#ff8a3d" />
+                <stop offset="100%" stop-color="#ff2e3a" />
               </linearGradient>
             </defs>
             <circle class="ring-track" cx="120" cy="120" r="108" />
@@ -77,6 +77,28 @@
       <!-- Milestone badges -->
       <section class="milestones" id="milestones"></section>
 
+      <!-- Science-backed recovery timeline -->
+      <section class="timeline-card">
+        <div class="grid-header">
+          <span class="grid-title">What's happening in your body</span>
+        </div>
+        <div class="next-benefit" id="nextBenefit"></div>
+        <div class="timeline" id="timeline"></div>
+        <details class="sources">
+          <summary>Sources &amp; medical note</summary>
+          <p class="sources-note">General information, not medical advice. Recovery varies by person. <b>If you drink heavily or daily, stopping suddenly can be dangerous</b> (seizures / delirium tremens) — talk to a doctor about safe detox.</p>
+          <ul class="sources-list">
+            <li>Mehta et al., <i>BMJ Open</i> 2018 — Royal Free 1-month abstinence study (liver, BP, metabolism)</li>
+            <li>Lally et al., 2010, <i>Eur. J. Social Psychology</i> — habit formation (median 66 days)</li>
+            <li>Volkow et al. — dopamine D2 receptor recovery (PET studies)</li>
+            <li>NIAAA — Neuroscience of addiction &amp; recovery; alcohol &amp; sleep</li>
+            <li>Roerecke et al., <i>Lancet Public Health</i> 2017 — alcohol &amp; blood pressure</li>
+            <li>Cleveland Clinic — alcohol withdrawal timeline</li>
+            <li>U.S. Surgeon General, 2025 — Alcohol &amp; Cancer Risk Advisory</li>
+          </ul>
+        </details>
+      </section>
+
       <!-- GitHub-style activity grid (fits full year, no scroll) -->
       <section class="grid-card">
         <div class="grid-header">
@@ -102,8 +124,26 @@
             <span>More</span>
           </div>
         </div>
+        <button id="editDayBtn" class="edit-day-btn">✎ Forgot a day? Edit a past day</button>
       </section>
     </main>
+  </div>
+
+  <!-- Edit-a-day modal -->
+  <div id="editModal" class="modal hidden">
+    <div class="modal-card">
+      <h2>Edit a day</h2>
+      <label class="field">
+        <span>Date</span>
+        <input type="date" id="editDateInput" />
+      </label>
+      <div class="edit-status" id="editStatus"></div>
+      <div class="modal-actions">
+        <button id="editToggleBtn" class="btn-primary">Mark sober</button>
+        <button id="editCloseBtn" class="btn-secondary">Done</button>
+      </div>
+      <p class="hint">Tip: you can also tap any day in the grid to toggle it.</p>
+    </div>
   </div>
 
   <!-- Settings modal -->

@@ -1,5 +1,5 @@
 // Simple offline-first cache so the app works without a connection.
-const CACHE = "sober-v2";
+const CACHE = "sober-v3";
 const ASSETS = [
   "./",
   "./index.html",
