@@ -1,5 +1,6 @@
-// Simple offline-first cache so the app works without a connection.
-const CACHE = "sober-v3";
+// Network-first service worker: always try the network so updates show up
+// immediately, falling back to cache only when offline.
+const CACHE = "sober-v4";
 const ASSETS = [
   "./",
   "./index.html",
@@ -25,17 +26,13 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
   e.respondWith(
-    caches.match(e.request).then((cached) => {
-      return (
-        cached ||
-        fetch(e.request)
-          .then((res) => {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
-            return res;
-          })
-          .catch(() => cached)
-      );
-    })
+    fetch(e.request)
+      .then((res) => {
+        // refresh the cache with the latest copy
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
+        return res;
+      })
+      .catch(() => caches.match(e.request)) // offline → serve cached
   );
 });
