@@ -65,7 +65,7 @@ final class SobrietyStore: ObservableObject {
     var currentStreak: Int { data.currentStreak }
     var bestStreak: Int { data.bestStreak }
     var totalDays: Int { data.totalDays }
-    var moneySaved: Double? { data.moneySaved }
+    var moneySaved: Double { data.moneySaved }
     var hoursSaved: Double? { data.hoursSaved }
     var isCheckedInToday: Bool { data.isSober(data.todayKey) }
     func isSober(_ k: String) -> Bool { data.isSober(k) }

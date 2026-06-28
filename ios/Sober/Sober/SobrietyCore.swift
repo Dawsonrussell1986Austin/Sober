@@ -181,7 +181,16 @@ struct SobrietyData {
         return soberKeys().filter { $0 <= t }.count
     }
 
-    var moneySaved: Double? { dailySpend.map { Double(daysSober) * $0 } }
+    /// Default daily savings — roughly a drink or two. Always applied unless
+    /// the user sets their own figure.
+    static let defaultDailySpend: Double = 12
+
+    /// Effective $/day (user's value if set, else the default).
+    var effectiveDailySpend: Double {
+        (dailySpend ?? 0) > 0 ? dailySpend! : Self.defaultDailySpend
+    }
+    /// Money saved always has a value (defaults to ~$12/day).
+    var moneySaved: Double { Double(daysSober) * effectiveDailySpend }
     var hoursSaved: Double? { dailyHours.map { Double(daysSober) * $0 } }
 
     /// Highest badge milestone reached, for celebration tracking.

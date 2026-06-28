@@ -173,24 +173,14 @@ struct ContentView: View {
     private var savingsCard: some View {
         let money = store.moneySaved
         let hours = store.hoursSaved
-        let hasAny = (money ?? 0) > 0 || (hours ?? 0) > 0
         return VStack(alignment: .leading, spacing: 12) {
             Text("WHAT YOU'VE RECLAIMED")
                 .font(.system(size: 12, weight: .semibold)).tracking(0.4).foregroundColor(Theme.textDim)
-            if hasAny {
-                HStack(spacing: 16) {
-                    if let m = money, m > 0 {
-                        savingsItem(value: "$" + Int(m).formatted(), sub: "not spent · $\(trim(store.dailySpend ?? 0))/day")
-                    }
-                    if let h = hours, h > 0 {
-                        savingsItem(value: prettyHours(h), sub: "reclaimed · \(trim(store.dailyHours ?? 0))h/day")
-                    }
-                }
-            } else {
-                Button { showSettings = true } label: {
-                    Text("Set a daily figure in settings to see what you've reclaimed.")
-                        .font(.system(size: 13)).foregroundColor(Theme.textDim)
-                        .multilineTextAlignment(.leading)
+            HStack(spacing: 16) {
+                savingsItem(value: "$" + Int(money).formatted(),
+                            sub: "not spent · $\(trim(store.data.effectiveDailySpend))/day")
+                if let h = hours, h > 0 {
+                    savingsItem(value: prettyHours(h), sub: "reclaimed · \(trim(store.dailyHours ?? 0))h/day")
                 }
             }
         }
@@ -198,7 +188,7 @@ struct ContentView: View {
         .padding(.horizontal, 18).padding(.vertical, 16)
         .background(RoundedRectangle(cornerRadius: 16)
             .fill(Theme.surface)
-            .overlay(RoundedRectangle(cornerRadius: 16).fill(LinearGradient(colors: hasAny ? [Theme.accent.opacity(0.10), .clear] : [.clear, .clear], startPoint: .top, endPoint: .bottom)))
+            .overlay(RoundedRectangle(cornerRadius: 16).fill(LinearGradient(colors: [Theme.accent.opacity(0.10), .clear], startPoint: .top, endPoint: .bottom)))
             .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.border)))
     }
     private func savingsItem(value: String, sub: String) -> some View {

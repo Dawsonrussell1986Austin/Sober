@@ -7,6 +7,7 @@
 
 const STORE_KEY = "sober.v1";
 const MS_DAY = 86400000;
+const DEFAULT_SPEND = 12; // $/day saved by default — roughly a drink or two
 
 /* Milestone thresholds (days) used by the ring's "next milestone". */
 const MILESTONES = [7, 14, 30, 60, 90, 180, 270, 365];
@@ -166,26 +167,17 @@ function renderSavings() {
   const n = daysSober();
   const card = document.getElementById("savingsCard");
   const row = document.getElementById("savingsRow");
-  const hasMoney = state.dailySpend != null && state.dailySpend > 0;
+  // Money always shows: defaults to ~$12/day (a drink or two) unless overridden.
+  const spend = state.dailySpend != null && state.dailySpend > 0 ? state.dailySpend : DEFAULT_SPEND;
   const hasHours = state.dailyHours != null && state.dailyHours > 0;
-
-  if (!hasMoney && !hasHours) {
-    card.classList.add("empty");
-    row.innerHTML = `<div class="savings-empty">Set a daily figure in <button id="savingsSettingsLink">settings</button> to see the money and time you've reclaimed.</div>`;
-    const link = document.getElementById("savingsSettingsLink");
-    if (link) link.addEventListener("click", openSettings);
-    return;
-  }
 
   card.classList.remove("empty");
   const items = [];
-  if (hasMoney) {
-    const total = Math.round(n * state.dailySpend);
-    items.push(`<div class="savings-item">
-      <div class="savings-value">$${total.toLocaleString()}</div>
-      <div class="savings-sub">not spent · $${state.dailySpend}/day</div>
-    </div>`);
-  }
+  const total = Math.round(n * spend);
+  items.push(`<div class="savings-item">
+    <div class="savings-value">$${total.toLocaleString()}</div>
+    <div class="savings-sub">not spent · $${spend}/day</div>
+  </div>`);
   if (hasHours) {
     const totalH = n * state.dailyHours;
     const days = Math.floor(totalH / 24);
@@ -406,7 +398,7 @@ document.getElementById("checkinBtn").addEventListener("click", () => {
 const modal = document.getElementById("settingsModal");
 function openSettings() {
   document.getElementById("startDateInput").value = state.startDate || "";
-  document.getElementById("dailySpendInput").value = state.dailySpend ?? "";
+  document.getElementById("dailySpendInput").value = state.dailySpend ?? DEFAULT_SPEND;
   document.getElementById("dailyHoursInput").value = state.dailyHours ?? "";
   modal.classList.remove("hidden");
 }

@@ -76,7 +76,7 @@ struct SettingsView: View {
             }
             .onAppear {
                 date = store.startDate ?? Date()
-                spendText = store.dailySpend.map { trim($0) } ?? ""
+                spendText = store.dailySpend.map { trim($0) } ?? trim(SobrietyData.defaultDailySpend)
                 hoursText = store.dailyHours.map { trim($0) } ?? ""
                 reminderOn = store.reminderEnabled
                 reminderTime = Calendar.current.date(from: DateComponents(hour: store.reminderHour, minute: store.reminderMinute)) ?? Date()
