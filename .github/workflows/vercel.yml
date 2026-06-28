@@ -10,12 +10,17 @@ name: Deploy to Vercel
 #   3. Push to main (or use "Run workflow" on the Actions tab).
 #
 # On the first run, the Vercel CLI auto-creates a project (named "sober") under
-# your token's account and prints the live URL. Every later push redeploys it.
+# the "dawson-russell" account and prints the live URL. Every later push
+# redeploys it.
 on:
   push:
     branches:
       - main
   workflow_dispatch:
+
+# Vercel account/team slug to deploy under (from vercel.com/<slug>).
+env:
+  VERCEL_SCOPE: dawson-russell
 
 jobs:
   deploy:
@@ -41,7 +46,7 @@ jobs:
             echo "::error::VERCEL_TOKEN secret is not set. Add it in Settings -> Secrets and variables -> Actions."
             exit 1
           fi
-          URL=$(vercel deploy --prod --yes --token="$VERCEL_TOKEN")
+          URL=$(vercel deploy --prod --yes --scope="$VERCEL_SCOPE" --token="$VERCEL_TOKEN")
           echo "Deployed to: $URL"
           echo "## ✅ Sober is live" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
