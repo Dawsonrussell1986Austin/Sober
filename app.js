@@ -53,7 +53,7 @@ function daysBetween(aKey, bKey) {
 
 /* ---------- storage ---------- */
 function load() {
-  const defaults = { startDate: null, checkins: {}, excluded: {}, dailySpend: null, dailyHours: null, lastCelebrated: 0, why: "" };
+  const defaults = { startDate: null, checkins: {}, excluded: {}, drinks: {}, mode222: false, dailySpend: null, dailyHours: null, lastCelebrated: 0, why: "" };
   try {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) return Object.assign(defaults, JSON.parse(raw));
@@ -67,7 +67,8 @@ let viewYear = new Date().getFullYear();
 
 /* ---------- core logic ---------- */
 function isSober(key) {
-  if (state.excluded && state.excluded[key]) return false; // explicitly marked not sober
+  if (state.drinks && state.drinks[key] > 0) return false;  // a drinking day isn't sober
+  if (state.excluded && state.excluded[key]) return false;  // explicitly marked not sober
   if (state.checkins[key]) return true;
   if (state.startDate) return key >= state.startDate && key <= todayKey();
   return false;
@@ -137,6 +138,7 @@ function soberKeys() {
     }
   }
   if (state.excluded) Object.keys(state.excluded).forEach(k => { if (state.excluded[k]) set.delete(k); });
+  if (state.drinks) Object.keys(state.drinks).forEach(k => { if (state.drinks[k] > 0) set.delete(k); });
   return [...set];
 }
 
@@ -238,6 +240,78 @@ function renderMilestones() {
       <div class="badge-icon">${b.icon}</div>
       <div class="badge-label">${b.label}</div>
     </div>`).join("");
+}
+
+/* ---------- 2-2-2 moderation mode (Kevin Rose) ---------- */
+function eval222() {
+  // rolling last 7 days (today and the previous 6)
+  const weekKeys = [];
+  for (let i = 0; i < 7; i++) weekKeys.push(toKey(new Date(Date.now() - i * MS_DAY)));
+  weekKeys.sort();
+  const drinksOn = (k) => (state.drinks && state.drinks[k]) || 0;
+
+  const nights = weekKeys.filter((k) => drinksOn(k) > 0).length;
+  const maxPerDay = weekKeys.reduce((m, k) => Math.max(m, drinksOn(k)), 0);
+  let backToBack = false;
+  for (let i = 1; i < weekKeys.length; i++) {
+    if (drinksOn(weekKeys[i - 1]) > 0 && drinksOn(weekKeys[i]) > 0) backToBack = true;
+  }
+  return {
+    nights,
+    rule1ok: maxPerDay <= 2,    // ≤ 2 drinks per day
+    rule2ok: !backToBack,       // never 2 days in a row
+    rule3ok: nights <= 2,       // ≤ 2 nights per week
+  };
+}
+
+function render222() {
+  const card = document.getElementById("mode222Card");
+  if (!state.mode222) { card.classList.add("hidden"); card.innerHTML = ""; return; }
+  card.classList.remove("hidden");
+  const e = eval222();
+  const onTrack = e.rule1ok && e.rule2ok && e.rule3ok;
+  const rule = (text, ok) =>
+    `<div class="m222-rule ${ok ? "ok" : "bad"}"><span class="m222-tick">${ok ? "✓" : "✗"}</span>${text}</div>`;
+  card.innerHTML = `
+    <div class="m222-head">
+      <span class="grid-title">Moderation · 2-2-2</span>
+      <span class="m222-credit">via <a href="https://www.kevinrose.com/" target="_blank" rel="noopener">Kevin Rose</a></span>
+    </div>
+    <div class="m222-status ${onTrack ? "ok" : "off"}">${onTrack ? "✓ On track this week" : "⚠ Watch your limits"} · ${e.nights}/2 nights this week</div>
+    <div class="m222-rules">
+      ${rule("≤ 2 drinks per day", e.rule1ok)}
+      ${rule("Never 2 days in a row", e.rule2ok)}
+      ${rule("≤ 2 nights per week", e.rule3ok)}
+    </div>`;
+}
+
+function setDrinks(key, count) {
+  if (!state.drinks) state.drinks = {};
+  if (count > 0) {
+    state.drinks[key] = count;
+    delete state.checkins[key];
+    if (state.excluded) delete state.excluded[key];
+  } else {
+    delete state.drinks[key];
+  }
+  save(state);
+  renderAll();
+  if (editCal) editCal.setSelected(key);
+  renderDrinkStepper();
+  refreshEditStatus();
+}
+
+function renderDrinkStepper() {
+  const wrap = document.getElementById("drinkStepper");
+  if (!wrap) return;
+  if (!state.mode222 || !editSelected) { wrap.classList.add("hidden"); return; }
+  wrap.classList.remove("hidden");
+  const cur = (state.drinks && state.drinks[editSelected]) || 0;
+  const btns = document.getElementById("drinkBtns");
+  btns.innerHTML = [0, 1, 2, 3].map((n) =>
+    `<button type="button" class="step-btn ${cur === n ? "sel" : ""}" data-n="${n}">${n === 3 ? "3+" : n}</button>`).join("");
+  btns.querySelectorAll(".step-btn").forEach((b) =>
+    b.addEventListener("click", () => setDrinks(editSelected, parseInt(b.dataset.n, 10))));
 }
 
 function renderWhy() {
@@ -381,6 +455,7 @@ function renderAll() {
   renderCounter();
   renderStats();
   renderWhy();
+  render222();
   renderSavings();
   renderMilestones();
   renderTimeline();
@@ -574,6 +649,7 @@ const modal = document.getElementById("settingsModal");
 function openSettings() {
   document.getElementById("dailySpendInput").value = state.dailySpend ?? DEFAULT_SPEND;
   document.getElementById("dailyHoursInput").value = state.dailyHours ?? "";
+  document.getElementById("mode222Input").checked = !!state.mode222;
   updateStartLabel(state.startDate);
   if (!startCal) {
     startCal = createCalendar(document.getElementById("startCalendar"), {
@@ -609,6 +685,11 @@ document.getElementById("dailyHoursInput").addEventListener("input", (e) => {
   save(state);
   renderSavings();
 });
+document.getElementById("mode222Input").addEventListener("change", (e) => {
+  state.mode222 = e.target.checked;
+  save(state);
+  renderAll();
+});
 
 document.getElementById("resetBtn").addEventListener("click", () => {
   if (confirm("Reset all data? This can't be undone.")) {
@@ -631,9 +712,15 @@ function refreshEditStatus() {
   if (!key) { statusEl.textContent = ""; return; }
   const label = fromKey(key).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
   const sober = isSober(key);
-  statusEl.innerHTML = `<b>${label}</b><br>` +
-    (sober ? '<span class="yes">● Sober day</span>' : '<span class="no">○ Not marked</span>');
+  const cur = (state.drinks && state.drinks[key]) || 0;
+  let line;
+  if (cur > 0) line = `<span class="no">🍷 ${cur}${cur >= 3 ? "+" : ""} drink${cur > 1 ? "s" : ""}</span>`;
+  else if (sober) line = '<span class="yes">● Sober day</span>';
+  else line = '<span class="no">○ Not marked</span>';
+  statusEl.innerHTML = `<b>${label}</b><br>${line}`;
   btn.textContent = sober ? "I had a drink" : "I was sober";
+  // In 2-2-2 mode the drink stepper replaces the binary button.
+  btn.style.display = state.mode222 ? "none" : "";
 }
 function openEdit() {
   editSelected = toKey(new Date(Date.now() - MS_DAY)); // default to yesterday
@@ -641,12 +728,13 @@ function openEdit() {
     editCal = createCalendar(document.getElementById("editCalendar"), {
       selected: editSelected, max: todayKey(),
       sober: (key) => isSober(key),
-      onSelect: (key) => { editSelected = key; refreshEditStatus(); }
+      onSelect: (key) => { editSelected = key; refreshEditStatus(); renderDrinkStepper(); }
     });
   } else {
     editCal.setSelected(editSelected);
   }
   refreshEditStatus();
+  renderDrinkStepper();
   editModal.classList.remove("hidden");
 }
 document.getElementById("editDayBtn").addEventListener("click", openEdit);

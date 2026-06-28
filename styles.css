@@ -289,6 +289,68 @@ html, body {
   text-decoration: underline;
 }
 
+/* ---------- 2-2-2 moderation mode ---------- */
+.mode222-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+.mode222-card.hidden { display: none; }
+.m222-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+.m222-credit { font-size: 11px; color: var(--text-dim); }
+.m222-credit a { color: var(--accent); text-decoration: none; }
+.m222-status {
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+.m222-status.ok  { color: var(--l4); background: rgba(255,122,31,0.12); }
+.m222-status.off { color: #ffce6b; background: rgba(255,180,66,0.12); }
+.m222-rules { display: flex; flex-direction: column; gap: 8px; }
+.m222-rule { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-dim); }
+.m222-tick {
+  width: 20px; height: 20px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.m222-rule.ok  .m222-tick { background: var(--accent); color: #160b04; }
+.m222-rule.ok  { color: var(--text); }
+.m222-rule.bad .m222-tick { background: #ffb442; color: #160b04; }
+.m222-rule.bad { color: var(--text); }
+
+/* settings toggle row */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 15px;
+  color: var(--text);
+  padding: 6px 0 14px;
+}
+.toggle-row input { width: 20px; height: 20px; accent-color: var(--accent); }
+
+/* drink stepper in the edit modal */
+.drink-stepper { margin: 4px 0 18px; }
+.drink-stepper.hidden { display: none; }
+.drink-stepper > span { font-size: 13px; color: var(--text-dim); display: block; margin-bottom: 8px; }
+.stepper-btns { display: flex; gap: 8px; }
+.step-btn {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 12px 0;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.step-btn.sel { background: var(--accent); color: #160b04; border-color: var(--accent); }
+
 /* ---------- Milestone badges ---------- */
 .milestones {
   display: flex;

@@ -79,6 +79,9 @@
         <div class="savings-row" id="savingsRow"></div>
       </section>
 
+      <!-- 2-2-2 moderation mode (Kevin Rose) -->
+      <section class="mode222-card hidden" id="mode222Card"></section>
+
       <!-- Milestone badges -->
       <section class="milestones" id="milestones"></section>
 
@@ -143,6 +146,10 @@
         <div class="calendar" id="editCalendar"></div>
       </div>
       <div class="edit-status" id="editStatus"></div>
+      <div class="drink-stepper hidden" id="drinkStepper">
+        <span>Drinks that day</span>
+        <div class="stepper-btns" id="drinkBtns"></div>
+      </div>
       <div class="modal-actions">
         <button id="editToggleBtn" class="btn-primary">Mark sober</button>
         <button id="editCloseBtn" class="btn-secondary">Done</button>
@@ -183,7 +190,11 @@
           <input type="number" inputmode="decimal" min="0" step="0.5" id="dailyHoursInput" placeholder="e.g. 2" />
         </label>
       </div>
-      <p class="hint">Every day from your start date counts as sober automatically. You can also tap "Check in" each day. Money saved defaults to $12/day (about a drink or two) — change it anytime.</p>
+      <label class="toggle-row">
+        <span>2-2-2 moderation mode</span>
+        <input type="checkbox" id="mode222Input" />
+      </label>
+      <p class="hint">Every day from your start date counts as sober automatically. You can also tap "Check in" each day. Money saved defaults to $12/day (about a drink or two) — change it anytime.<br><br><b>2-2-2 mode</b> (an idea from Kevin Rose) tracks moderate drinking instead of full sobriety: no more than 2 drinks a day, never 2 days in a row, and no more than 2 nights a week. Log drinks on any day from "Edit a past day".</p>
       <div class="modal-actions">
         <button id="resetBtn" class="btn-danger">Reset all data</button>
         <button id="closeSettings" class="btn-primary">Done</button>
