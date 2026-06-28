@@ -133,10 +133,10 @@
   <div id="editModal" class="modal hidden">
     <div class="modal-card">
       <h2>Edit a day</h2>
-      <label class="field">
+      <div class="field">
         <span>Date</span>
-        <input type="date" id="editDateInput" />
-      </label>
+        <div class="calendar" id="editCalendar"></div>
+      </div>
       <div class="edit-status" id="editStatus"></div>
       <div class="modal-actions">
         <button id="editToggleBtn" class="btn-primary">Mark sober</button>
@@ -150,10 +150,11 @@
   <div id="settingsModal" class="modal hidden">
     <div class="modal-card">
       <h2>Settings</h2>
-      <label class="field">
+      <div class="field">
         <span>Sobriety start date</span>
-        <input type="date" id="startDateInput" />
-      </label>
+        <div class="cal-selected" id="startSelectedLabel"></div>
+        <div class="calendar" id="startCalendar"></div>
+      </div>
       <div class="field-row">
         <label class="field">
           <span>Money saved / day</span>

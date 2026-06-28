@@ -474,11 +474,89 @@ document.getElementById("checkinBtn").addEventListener("click", () => {
   toast("Logged today. Proud of you. 🌱");
 });
 
+/* Reusable tap-to-pick month calendar. opts: { selected, max, onSelect } */
+function createCalendar(container, opts) {
+  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const wk = ["S", "M", "T", "W", "T", "F", "S"];
+  let sel = opts.selected || null;
+  let view = sel ? fromKey(sel) : new Date();
+  view = new Date(view.getFullYear(), view.getMonth(), 1);
+
+  function build() {
+    container.innerHTML = "";
+    const head = document.createElement("div"); head.className = "cal-head";
+    const prev = document.createElement("button"); prev.type = "button"; prev.className = "cal-nav"; prev.textContent = "‹";
+    const title = document.createElement("div"); title.className = "cal-title";
+    title.textContent = monthNames[view.getMonth()] + " " + view.getFullYear();
+    const next = document.createElement("button"); next.type = "button"; next.className = "cal-nav"; next.textContent = "›";
+    if (opts.max) {
+      const m = fromKey(opts.max);
+      next.disabled = view.getFullYear() > m.getFullYear() ||
+        (view.getFullYear() === m.getFullYear() && view.getMonth() >= m.getMonth());
+    }
+    prev.onclick = () => { view = new Date(view.getFullYear(), view.getMonth() - 1, 1); build(); };
+    next.onclick = () => { if (!next.disabled) { view = new Date(view.getFullYear(), view.getMonth() + 1, 1); build(); } };
+    head.append(prev, title, next);
+    container.appendChild(head);
+
+    const week = document.createElement("div"); week.className = "cal-week";
+    wk.forEach(w => { const s = document.createElement("span"); s.textContent = w; week.appendChild(s); });
+    container.appendChild(week);
+
+    const grid = document.createElement("div"); grid.className = "cal-grid";
+    const blanks = new Date(view.getFullYear(), view.getMonth(), 1).getDay();
+    for (let i = 0; i < blanks; i++) { const b = document.createElement("div"); b.className = "cal-day blank"; grid.appendChild(b); }
+    const dim = new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate();
+    for (let d = 1; d <= dim; d++) {
+      const key = toKey(new Date(view.getFullYear(), view.getMonth(), d));
+      const cell = document.createElement("button"); cell.type = "button"; cell.className = "cal-day"; cell.textContent = d;
+      const disabled = opts.max && key > opts.max;
+      if (disabled) cell.classList.add("disabled");
+      if (key === todayKey()) cell.classList.add("today");
+      if (key === sel) cell.classList.add("selected");
+      cell.onclick = () => { if (!disabled) { sel = key; opts.onSelect(key); build(); } };
+      grid.appendChild(cell);
+    }
+    container.appendChild(grid);
+  }
+  build();
+  return {
+    setSelected(k) {
+      sel = k;
+      if (k) { const d = fromKey(k); view = new Date(d.getFullYear(), d.getMonth(), 1); }
+      build();
+    }
+  };
+}
+
+let startCal = null, editCal = null, editSelected = null;
+
+function updateStartLabel(key) {
+  document.getElementById("startSelectedLabel").textContent = key
+    ? fromKey(key).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" })
+    : "Not set — pick the day you started.";
+}
+
 const modal = document.getElementById("settingsModal");
 function openSettings() {
-  document.getElementById("startDateInput").value = state.startDate || "";
   document.getElementById("dailySpendInput").value = state.dailySpend ?? DEFAULT_SPEND;
   document.getElementById("dailyHoursInput").value = state.dailyHours ?? "";
+  updateStartLabel(state.startDate);
+  if (!startCal) {
+    startCal = createCalendar(document.getElementById("startCalendar"), {
+      selected: state.startDate, max: todayKey(),
+      onSelect: (key) => {
+        state.startDate = key;
+        save(state);
+        viewYear = new Date().getFullYear();
+        updateStartLabel(key);
+        renderAll();
+        toast("Start date saved");
+      }
+    });
+  } else {
+    startCal.setSelected(state.startDate);
+  }
   modal.classList.remove("hidden");
 }
 document.getElementById("settingsBtn").addEventListener("click", openSettings);
@@ -498,17 +576,6 @@ document.getElementById("dailyHoursInput").addEventListener("input", (e) => {
   renderSavings();
 });
 
-document.getElementById("startDateInput").addEventListener("change", (e) => {
-  const v = e.target.value;
-  if (!v) return;
-  if (v > todayKey()) { toast("Start date can't be in the future"); e.target.value = state.startDate || ""; return; }
-  state.startDate = v;
-  save(state);
-  viewYear = new Date().getFullYear();
-  renderAll();
-  toast("Start date saved");
-});
-
 document.getElementById("resetBtn").addEventListener("click", () => {
   if (confirm("Reset all data? This can't be undone.")) {
     state = { startDate: null, checkins: {} };
@@ -522,10 +589,9 @@ document.getElementById("resetBtn").addEventListener("click", () => {
 
 /* ---------- edit a past day ---------- */
 const editModal = document.getElementById("editModal");
-const editDateInput = document.getElementById("editDateInput");
 
 function refreshEditStatus() {
-  const key = editDateInput.value;
+  const key = editSelected;
   const statusEl = document.getElementById("editStatus");
   const btn = document.getElementById("editToggleBtn");
   if (!key) { statusEl.textContent = ""; return; }
@@ -536,15 +602,21 @@ function refreshEditStatus() {
   btn.textContent = sober ? "Mark as not sober" : "Mark as sober";
 }
 function openEdit() {
-  editDateInput.max = todayKey();
-  editDateInput.value = toKey(new Date(Date.now() - MS_DAY)); // default to yesterday
+  editSelected = toKey(new Date(Date.now() - MS_DAY)); // default to yesterday
+  if (!editCal) {
+    editCal = createCalendar(document.getElementById("editCalendar"), {
+      selected: editSelected, max: todayKey(),
+      onSelect: (key) => { editSelected = key; refreshEditStatus(); }
+    });
+  } else {
+    editCal.setSelected(editSelected);
+  }
   refreshEditStatus();
   editModal.classList.remove("hidden");
 }
 document.getElementById("editDayBtn").addEventListener("click", openEdit);
-editDateInput.addEventListener("change", refreshEditStatus);
 document.getElementById("editToggleBtn").addEventListener("click", () => {
-  const key = editDateInput.value;
+  const key = editSelected;
   if (!key || key > todayKey()) return;
   toggleDay(key);
   refreshEditStatus();
