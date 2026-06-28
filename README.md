@@ -22,35 +22,57 @@ Both have the same features and the same dark, GitHub-inspired look.
 A proper iPhone app written in SwiftUI. No third-party dependencies.
 
 ### Features
-- **Big day counter** — your days sober, front and center
+- **Progress ring** around your day count, filling toward the next milestone
 - **One-tap daily check-in** with haptic feedback
-- **Year activity grid** — every sober day lights up green, just like GitHub contributions; scroll across years
+- **Milestone badges** (1 week → 1 year) that light up as you reach them, with a **confetti celebration**
+- **What you've reclaimed** — money not spent and time saved, from a daily figure you set
+- **Year activity grid** — the whole year fits on screen (no scrolling), every sober day lit green
 - **Stats** — current streak, best streak, total sober days
-- **Private & offline** — data is stored on-device in `UserDefaults`; nothing leaves your phone
+- **Home-screen & lock-screen widgets** (see below)
+- **Private & offline** — data is stored on-device; nothing leaves your phone
+
+### Widgets
+The app includes a WidgetKit extension (`SoberWidget`) with:
+- **Home screen** — small (days + next milestone) and medium (days, streak, money saved, mini activity grid)
+- **Lock screen** — circular gauge, inline, and rectangular complications
+
+Widgets read the same data as the app through an **App Group** (`group.com.sober.app`).
 
 ### Build & run
 > Requires a Mac with **Xcode 15+**. (iOS apps can only be built on macOS.)
 
 1. Open `ios/Sober/Sober.xcodeproj` in Xcode.
 2. Select the **Sober** scheme and a simulator (or your iPhone).
-3. If running on a real device: in **Signing & Capabilities**, pick your Apple ID team and change the bundle identifier (`com.sober.app`) to something unique.
-4. Press **▶ Run**.
+3. **For the widgets to share data**, enable the App Group on **both** targets:
+   - Select the **Sober** target → **Signing & Capabilities** → **+ Capability → App Groups** → check (or add) `group.com.sober.app`.
+   - Do the same for the **SoberWidgetExtension** target.
+   - On a real device you'll also pick your Apple ID **team** and may need to make the bundle IDs unique (keep the app `com.…` and widget `com.….SoberWidget`, and the App Group identical on both).
+   - *In the Simulator, App Groups work without a paid developer account.*
+4. Press **▶ Run**. Long-press the home screen / lock screen to add the **Sober** widget.
 
-First launch: tap the ⚙ gear and set your **sobriety start date**. Every day from that date counts automatically; you can also tap **Check in** each day.
+First launch: tap the ⚙ gear, set your **sobriety start date**, and optionally a **daily $ / hours** figure. Every day from that date counts automatically; you can also tap **Check in** each day.
 
 ### Project layout
 ```
 ios/Sober/
 ├── Sober.xcodeproj
-└── Sober/
-    ├── SoberApp.swift            App entry point
-    ├── ContentView.swift         Main screen (counter, check-in, stats)
-    ├── SobrietyStore.swift       Data model: counter, streaks, persistence
-    ├── Theme.swift               GitHub-inspired color palette
-    ├── Views/
-    │   ├── ActivityGridView.swift  The year contribution grid
-    │   └── SettingsView.swift       Start date + reset
-    └── Assets.xcassets           App icon & accent color
+├── Sober/                        App target
+│   ├── SoberApp.swift            App entry point
+│   ├── ContentView.swift         Main screen (ring, check-in, stats, savings, badges)
+│   ├── SobrietyStore.swift       Observable store (persists to App Group, reloads widgets)
+│   ├── SobrietyCore.swift        Shared model + stat math + milestones (app & widget)
+│   ├── ConfettiView.swift        Milestone celebration
+│   ├── Theme.swift               GitHub-inspired color palette (shared)
+│   ├── Sober.entitlements        App Group entitlement
+│   ├── Views/
+│   │   ├── ActivityGridView.swift  Scroll-free year grid
+│   │   └── SettingsView.swift       Start date, daily figures, reset
+│   └── Assets.xcassets           App icon & accent color
+└── SoberWidget/                  Widget extension target
+    ├── SoberWidgetBundle.swift   @main widget bundle
+    ├── SoberWidget.swift         Timeline provider + home/lock-screen views
+    ├── Info.plist                WidgetKit extension point
+    └── SoberWidget.entitlements  App Group entitlement
 ```
 
 ---
