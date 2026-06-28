@@ -1,5 +1,6 @@
 import WidgetKit
 import SwiftUI
+import AppIntents
 
 // MARK: - Timeline
 
@@ -11,6 +12,7 @@ struct SoberEntry: TimelineEntry {
     let nextLabel: String
     let remaining: Int
     let moneySaved: Double?
+    let checkedInToday: Bool
     let recent: [Bool]   // last 91 days, oldest -> newest
 }
 
@@ -18,7 +20,7 @@ struct Provider: TimelineProvider {
     func placeholder(in context: Context) -> SoberEntry {
         SoberEntry(date: Date(), days: 78, currentStreak: 78, progress: 0.86,
                    nextLabel: "90 days", remaining: 12, moneySaved: 1170,
-                   recent: (0..<91).map { _ in Bool.random() })
+                   checkedInToday: true, recent: (0..<91).map { _ in Bool.random() })
     }
 
     func getSnapshot(in context: Context, completion: @escaping (SoberEntry) -> Void) {
@@ -50,7 +52,8 @@ struct Provider: TimelineProvider {
 
         return SoberEntry(date: Date(), days: n, currentStreak: data.currentStreak,
                           progress: progress, nextLabel: Milestones.label(m.next),
-                          remaining: m.next - n, moneySaved: data.moneySaved, recent: recent)
+                          remaining: m.next - n, moneySaved: data.moneySaved,
+                          checkedInToday: data.isSober(data.todayKey), recent: recent)
     }
 }
 
@@ -86,28 +89,48 @@ struct SoberWidgetEntryView: View {
         }
     }
 
-    // Home-screen medium: stats + mini activity grid
+    // Home-screen medium: stats + mini activity grid + tap-to-check-in
     private var medium: some View {
         ZStack {
             Theme.bg
             HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(entry.days)")
-                        .font(.system(size: 44, weight: .heavy, design: .rounded))
+                        .font(.system(size: 40, weight: .heavy, design: .rounded))
                         .foregroundStyle(LinearGradient(colors: [Theme.level4, Theme.accent], startPoint: .top, endPoint: .bottom))
                     Text(entry.days == 1 ? "day sober" : "days sober")
                         .font(.system(size: 12, weight: .medium)).foregroundColor(Theme.textDim)
                     Text("🔥 \(entry.currentStreak) streak")
-                        .font(.system(size: 12)).foregroundColor(Theme.text).padding(.top, 4)
+                        .font(.system(size: 12)).foregroundColor(Theme.text).padding(.top, 3)
                     if let m = entry.moneySaved, m > 0 {
                         Text("$\(Int(m).formatted()) saved")
                             .font(.system(size: 12)).foregroundColor(Theme.textDim)
                     }
+                    Spacer(minLength: 6)
+                    checkInButton
                 }
                 Spacer()
                 miniGrid
             }
             .padding(16)
+        }
+    }
+
+    /// Interactive check-in button (iOS 17+); informational on earlier versions.
+    @ViewBuilder private var checkInButton: some View {
+        if #available(iOS 17.0, *) {
+            Button(intent: CheckInIntent()) {
+                Text(entry.checkedInToday ? "✓ Checked in" : "Check in")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(entry.checkedInToday ? Theme.accent : .white)
+                    .padding(.horizontal, 12).padding(.vertical, 7)
+                    .background(Capsule().fill(entry.checkedInToday ? Theme.surface2 : Theme.accent))
+            }
+            .buttonStyle(.plain)
+            .disabled(entry.checkedInToday)
+        } else {
+            Text(entry.checkedInToday ? "✓ Sober today" : "\(entry.remaining) to \(entry.nextLabel)")
+                .font(.system(size: 11)).foregroundColor(Theme.accent)
         }
     }
 

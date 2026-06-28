@@ -54,6 +54,9 @@ struct SobrietyData {
     var dailySpend: Double?
     var dailyHours: Double?
     var lastCelebrated: Int
+    var reminderEnabled: Bool = false
+    var reminderHour: Int = 20
+    var reminderMinute: Int = 0
 
     static let calendar = Calendar.current
     static let keyFormatter: DateFormatter = {
@@ -70,6 +73,9 @@ struct SobrietyData {
     private static let kSpend = "sober.dailySpend"
     private static let kHours = "sober.dailyHours"
     private static let kCelebrated = "sober.lastCelebrated"
+    private static let kReminderOn = "sober.reminderEnabled"
+    private static let kReminderH = "sober.reminderHour"
+    private static let kReminderM = "sober.reminderMinute"
 
     static func load() -> SobrietyData {
         let d = AppGroup.defaults
@@ -78,7 +84,10 @@ struct SobrietyData {
             checkins: Set((d.array(forKey: kCheckins) as? [String]) ?? []),
             dailySpend: d.object(forKey: kSpend) as? Double,
             dailyHours: d.object(forKey: kHours) as? Double,
-            lastCelebrated: d.integer(forKey: kCelebrated)
+            lastCelebrated: d.integer(forKey: kCelebrated),
+            reminderEnabled: d.bool(forKey: kReminderOn),
+            reminderHour: d.object(forKey: kReminderH) as? Int ?? 20,
+            reminderMinute: d.object(forKey: kReminderM) as? Int ?? 0
         )
     }
 
@@ -89,6 +98,18 @@ struct SobrietyData {
         if let s = dailySpend { d.set(s, forKey: Self.kSpend) } else { d.removeObject(forKey: Self.kSpend) }
         if let h = dailyHours { d.set(h, forKey: Self.kHours) } else { d.removeObject(forKey: Self.kHours) }
         d.set(lastCelebrated, forKey: Self.kCelebrated)
+        d.set(reminderEnabled, forKey: Self.kReminderOn)
+        d.set(reminderHour, forKey: Self.kReminderH)
+        d.set(reminderMinute, forKey: Self.kReminderM)
+    }
+
+    /// Log today as a sober day directly in shared storage (used by the
+    /// interactive widget's App Intent, which has no SobrietyStore instance).
+    static func checkInTodayInSharedStore() {
+        var d = load()
+        if d.startDate == nil { d.startDate = Date() }
+        d.checkins.insert(d.todayKey)
+        d.save()
     }
 
     // MARK: key helpers

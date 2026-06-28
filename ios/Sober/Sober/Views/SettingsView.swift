@@ -7,6 +7,8 @@ struct SettingsView: View {
     @State private var date: Date = Date()
     @State private var spendText: String = ""
     @State private var hoursText: String = ""
+    @State private var reminderOn = false
+    @State private var reminderTime = Date()
     @State private var showResetAlert = false
 
     var body: some View {
@@ -29,6 +31,25 @@ struct SettingsView: View {
                             field("Hours saved / day") {
                                 inputRow(prefix: nil, text: $hoursText) { commitHours() }
                             }
+                        }
+
+                        field("Daily reminder") {
+                            VStack(spacing: 12) {
+                                Toggle(isOn: $reminderOn) {
+                                    Text("Remind me to check in").font(.system(size: 15)).foregroundColor(Theme.text)
+                                }
+                                .tint(Theme.accent)
+                                if reminderOn {
+                                    HStack {
+                                        Text("Time").font(.system(size: 15)).foregroundColor(Theme.textDim)
+                                        Spacer()
+                                        DatePicker("", selection: $reminderTime, displayedComponents: .hourAndMinute)
+                                            .labelsHidden()
+                                    }
+                                }
+                            }
+                            .padding(14)
+                            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.surface).overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.border)))
                         }
 
                         Text("Every day from your start date counts as sober automatically. Set a daily figure to see the money and time you've reclaimed.")
@@ -57,6 +78,33 @@ struct SettingsView: View {
                 date = store.startDate ?? Date()
                 spendText = store.dailySpend.map { trim($0) } ?? ""
                 hoursText = store.dailyHours.map { trim($0) } ?? ""
+                reminderOn = store.reminderEnabled
+                reminderTime = Calendar.current.date(from: DateComponents(hour: store.reminderHour, minute: store.reminderMinute)) ?? Date()
+            }
+            .onChange(of: reminderOn) { on in
+                if on {
+                    Task {
+                        let granted = await NotificationManager.requestAuthorization()
+                        await MainActor.run {
+                            if granted {
+                                store.reminderEnabled = true
+                                applyReminder()
+                            } else {
+                                reminderOn = false
+                                store.reminderEnabled = false
+                            }
+                        }
+                    }
+                } else {
+                    store.reminderEnabled = false
+                    NotificationManager.cancel()
+                }
+            }
+            .onChange(of: reminderTime) { newTime in
+                let c = Calendar.current.dateComponents([.hour, .minute], from: newTime)
+                store.reminderHour = c.hour ?? 20
+                store.reminderMinute = c.minute ?? 0
+                if reminderOn { applyReminder() }
             }
             .alert("Reset all data?", isPresented: $showResetAlert) {
                 Button("Cancel", role: .cancel) {}
@@ -98,6 +146,9 @@ struct SettingsView: View {
     private func commitHours() {
         let v = Double(hoursText.trimmingCharacters(in: .whitespaces))
         store.dailyHours = (v ?? 0) > 0 ? v : nil
+    }
+    private func applyReminder() {
+        NotificationManager.schedule(hour: store.reminderHour, minute: store.reminderMinute)
     }
     private func trim(_ v: Double) -> String {
         v == v.rounded() ? String(Int(v)) : String(format: "%.1f", v)

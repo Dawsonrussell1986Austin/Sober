@@ -11,6 +11,11 @@ final class SobrietyStore: ObservableObject {
     @Published var dailySpend: Double? { didSet { persist() } }
     @Published var dailyHours: Double? { didSet { persist() } }
     @Published var lastCelebrated: Int { didSet { persist() } }
+    @Published var reminderEnabled: Bool { didSet { persist() } }
+    @Published var reminderHour: Int { didSet { persist() } }
+    @Published var reminderMinute: Int { didSet { persist() } }
+
+    private var suppressPersist = false
 
     init() {
         let d = SobrietyData.load()
@@ -19,16 +24,38 @@ final class SobrietyStore: ObservableObject {
         dailySpend = d.dailySpend
         dailyHours = d.dailyHours
         lastCelebrated = d.lastCelebrated
+        reminderEnabled = d.reminderEnabled
+        reminderHour = d.reminderHour
+        reminderMinute = d.reminderMinute
+    }
+
+    /// Re-read from shared storage (e.g. after the interactive widget logs a
+    /// check-in while the app was backgrounded). Avoids re-persisting.
+    func reload() {
+        let d = SobrietyData.load()
+        suppressPersist = true
+        startDate = d.startDate
+        checkins = d.checkins
+        dailySpend = d.dailySpend
+        dailyHours = d.dailyHours
+        lastCelebrated = d.lastCelebrated
+        reminderEnabled = d.reminderEnabled
+        reminderHour = d.reminderHour
+        reminderMinute = d.reminderMinute
+        suppressPersist = false
     }
 
     /// Snapshot for stat computations (all logic lives in SobrietyData).
     var data: SobrietyData {
         SobrietyData(startDate: startDate, checkins: checkins,
                      dailySpend: dailySpend, dailyHours: dailyHours,
-                     lastCelebrated: lastCelebrated)
+                     lastCelebrated: lastCelebrated,
+                     reminderEnabled: reminderEnabled,
+                     reminderHour: reminderHour, reminderMinute: reminderMinute)
     }
 
     private func persist() {
+        guard !suppressPersist else { return }
         data.save()
         WidgetCenter.shared.reloadAllTimelines()
     }
