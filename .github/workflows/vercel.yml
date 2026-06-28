@@ -1,22 +1,25 @@
 name: Deploy to Vercel
 
-# Deploys the web app to Vercel on every push to main.
+# Deploys the web app to Vercel.
 #
-# ONE-TIME SETUP (required before this can run):
-#   1. Create a Vercel token: https://vercel.com/account/settings/tokens
-#   2. In this repo: Settings -> Secrets and variables -> Actions -> New repository secret
-#        Name:  VERCEL_TOKEN
-#        Value: <the token>
-#   3. Push to main (or use "Run workflow" on the Actions tab).
+# Token resolution order:
+#   1. The "vercel_token" input (passed when manually dispatching this workflow).
+#   2. The VERCEL_TOKEN repository secret (recommended for ongoing auto-deploys:
+#      Settings -> Secrets and variables -> Actions -> New repository secret).
 #
 # On the first run, the Vercel CLI auto-creates a project (named "sober") under
-# the "dawson-russell" account and prints the live URL. Every later push
-# redeploys it.
+# the "dawson-russell" account and prints the live URL. Every later push to main
+# redeploys it (once VERCEL_TOKEN is saved as a secret).
 on:
   push:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      vercel_token:
+        description: "Vercel token (one-time; leave blank to use the VERCEL_TOKEN secret)"
+        required: false
+        default: ""
 
 # Vercel account/team slug to deploy under (from vercel.com/<slug>).
 env:
@@ -40,14 +43,20 @@ jobs:
       - name: Deploy to Vercel (production)
         id: deploy
         env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          INPUT_TOKEN: ${{ github.event.inputs.vercel_token }}
+          SECRET_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          if [ -z "$VERCEL_TOKEN" ]; then
-            echo "::error::VERCEL_TOKEN secret is not set. Add it in Settings -> Secrets and variables -> Actions."
+          TOKEN="${INPUT_TOKEN:-$SECRET_TOKEN}"
+          if [ -z "$TOKEN" ]; then
+            echo "::error::No Vercel token. Dispatch with the vercel_token input, or set the VERCEL_TOKEN secret."
             exit 1
           fi
-          URL=$(vercel deploy --prod --yes --scope="$VERCEL_SCOPE" --token="$VERCEL_TOKEN")
+          # Mask the token so it can never surface in logs.
+          echo "::add-mask::$TOKEN"
+          URL=$(vercel deploy --prod --yes --scope="$VERCEL_SCOPE" --token="$TOKEN")
           echo "Deployed to: $URL"
-          echo "## ✅ Sober is live" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "**$URL**" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## ✅ Sober is live"
+            echo ""
+            echo "**$URL**"
+          } >> "$GITHUB_STEP_SUMMARY"
