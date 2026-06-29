@@ -35,6 +35,44 @@ const TIMELINE = [
   { d: 365, label: "1 year",    title: "Long-term risk drops",        detail: "Sustained sobriety lowers your risk of alcohol-related disease, including several cancers, over time.", src: "U.S. Surgeon General, 2025" },
 ];
 
+/* Scripture (World English Bible — public domain). Verse of the day rotates
+ * by day-of-year; milestone verses pair with each badge. */
+const SCRIPTURE = [
+  { ref: "Philippians 4:13", text: "I can do all things through Christ, who strengthens me." },
+  { ref: "1 Corinthians 10:13", text: "God is faithful, who will not allow you to be tempted above what you are able, but will with the temptation also make the way of escape." },
+  { ref: "Isaiah 41:10", text: "Don’t be afraid, for I am with you. Don’t be dismayed, for I am your God. I will strengthen you. Yes, I will help you." },
+  { ref: "2 Corinthians 5:17", text: "If anyone is in Christ, he is a new creation. The old things have passed away. Behold, all things have become new." },
+  { ref: "Psalm 46:1", text: "God is our refuge and strength, a very present help in trouble." },
+  { ref: "Matthew 11:28", text: "Come to me, all you who labor and are heavily burdened, and I will give you rest." },
+  { ref: "2 Corinthians 12:9", text: "My grace is sufficient for you, for my power is made perfect in weakness." },
+  { ref: "Romans 12:2", text: "Don’t be conformed to this world, but be transformed by the renewing of your mind." },
+  { ref: "Galatians 5:1", text: "Stand firm therefore in the liberty by which Christ has made us free, and don’t be entangled again with a yoke of bondage." },
+  { ref: "Psalm 40:2", text: "He brought me up out of a horrible pit, out of the miry clay. He set my feet on a rock, and gave me a firm place to stand." },
+  { ref: "1 Peter 5:7", text: "Cast all your worries on him, because he cares for you." },
+  { ref: "Romans 8:1", text: "There is therefore now no condemnation to those who are in Christ Jesus." },
+  { ref: "Psalm 51:10", text: "Create in me a clean heart, O God. Renew a right spirit within me." },
+  { ref: "Ezekiel 36:26", text: "I will give you a new heart, and I will put a new spirit within you." },
+  { ref: "John 8:36", text: "If therefore the Son makes you free, you will be free indeed." },
+  { ref: "Lamentations 3:22-23", text: "His compassion doesn’t fail. They are new every morning. Great is your faithfulness." },
+];
+
+const MILESTONE_VERSE = {
+  7:   { ref: "Lamentations 3:22-23", text: "His compassions are new every morning." },
+  30:  { ref: "2 Corinthians 5:17", text: "If anyone is in Christ, he is a new creation." },
+  90:  { ref: "Philippians 4:13", text: "I can do all things through Christ, who strengthens me." },
+  180: { ref: "Isaiah 41:10", text: "I will strengthen you. Yes, I will help you." },
+  365: { ref: "Galatians 5:1", text: "Stand firm in the liberty by which Christ has made us free." },
+};
+
+const SERENITY_SHORT = "God, grant me the serenity to accept the things I cannot change, the courage to change the things I can, and the wisdom to know the difference.";
+const SERENITY_FULL = SERENITY_SHORT + " Living one day at a time; enjoying one moment at a time; accepting hardship as a pathway to peace; trusting that you will make all things right if I surrender to your will; that I may be reasonably happy in this life, and supremely happy with you forever in the next. Amen.";
+
+function dayOfYear() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  return Math.floor((now - start) / 86400000);
+}
+
 /* ---------- date helpers (all local time) ---------- */
 function todayKey() { return toKey(new Date()); }
 function toKey(d) {
@@ -314,6 +352,15 @@ function renderDrinkStepper() {
     b.addEventListener("click", () => setDrinks(editSelected, parseInt(b.dataset.n, 10))));
 }
 
+let prayerExpanded = false;
+function renderVerse() {
+  const v = SCRIPTURE[dayOfYear() % SCRIPTURE.length];
+  document.getElementById("verseText").textContent = "“" + v.text + "”";
+  document.getElementById("verseRef").textContent = "— " + v.ref + " (WEB)";
+  document.getElementById("prayerText").textContent = prayerExpanded ? SERENITY_FULL : SERENITY_SHORT;
+  document.getElementById("prayerToggle").textContent = prayerExpanded ? "Show less" : "Show full prayer";
+}
+
 function renderWhy() {
   const card = document.getElementById("whyCard");
   const el = document.getElementById("whyText");
@@ -455,6 +502,7 @@ function renderAll() {
   renderCounter();
   renderStats();
   renderWhy();
+  renderVerse();
   render222();
   renderSavings();
   renderMilestones();
@@ -474,7 +522,8 @@ function maybeCelebrate() {
     save(state);
     const badge = BADGES.find(b => b.d === highest);
     burstConfetti();
-    toast(`${badge.icon} ${badge.label} milestone! Incredible.`);
+    const v = MILESTONE_VERSE[highest];
+    toast(v ? `${badge.icon} ${badge.label}! “${v.text}” — ${v.ref}` : `${badge.icon} ${badge.label} milestone! Incredible.`, v ? 5500 : 1800);
   }
 }
 
@@ -538,13 +587,18 @@ function burstConfetti() {
 }
 
 /* ---------- interactions ---------- */
-function toast(msg) {
+function toast(msg, ms = 1800) {
   const el = document.getElementById("toast");
   el.textContent = msg;
   el.classList.remove("hidden");
   clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.add("hidden"), 1800);
+  el._t = setTimeout(() => el.classList.add("hidden"), ms);
 }
+
+document.getElementById("prayerToggle").addEventListener("click", () => {
+  prayerExpanded = !prayerExpanded;
+  renderVerse();
+});
 
 document.getElementById("checkinBtn").addEventListener("click", () => {
   const key = todayKey();

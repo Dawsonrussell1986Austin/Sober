@@ -192,6 +192,52 @@ html, body {
   margin-bottom: 16px;
 }
 
+/* ---------- Scripture & prayer ---------- */
+.verse-card, .prayer-card {
+  background: linear-gradient(180deg, rgba(255,90,31,0.08), transparent), var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+.verse-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.verse-text {
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text);
+  font-family: Georgia, "Times New Roman", serif;
+}
+.verse-ref {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 8px;
+  font-weight: 600;
+}
+.prayer-text {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text);
+  font-family: Georgia, "Times New Roman", serif;
+}
+.prayer-toggle {
+  margin-top: 10px;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
 /* ---------- Check-in card ---------- */
 .checkin-card {
   background: var(--surface);
@@ -735,6 +781,9 @@ html, body {
   z-index: 200;
   box-shadow: 0 8px 24px rgba(0,0,0,0.4);
   transition: opacity 0.2s, transform 0.2s;
+  max-width: min(340px, 88vw);
+  text-align: center;
+  line-height: 1.4;
 }
 .toast.hidden {
   opacity: 0;
