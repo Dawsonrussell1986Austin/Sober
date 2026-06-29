@@ -195,11 +195,7 @@ private struct EditDayView: View {
             ZStack {
                 Theme.bg.ignoresSafeArea()
                 VStack(alignment: .leading, spacing: 18) {
-                    DatePicker("", selection: $date, in: ...Date(), displayedComponents: .date)
-                        .datePickerStyle(.graphical)
-                        .accentColor(Theme.accent)
-                        .padding(8)
-                        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.surface).overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.border)))
+                    CalendarPickerView(selected: $date, isSober: { store.isSober(store.key($0)) })
 
                     let key = store.key(date)
                     let count = store.drinkCount(on: key)

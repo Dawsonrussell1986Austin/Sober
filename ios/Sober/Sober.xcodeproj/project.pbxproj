@@ -14,6 +14,7 @@
 		1B0000000000000000000005 /* ActivityGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000005 /* ActivityGridView.swift */; };
 		1B0000000000000000000006 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000006 /* SettingsView.swift */; };
 		1B000000000000000000000C /* RecoveryTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000000000000000000000D /* RecoveryTimelineView.swift */; };
+		1B000000000000000000000D /* CalendarPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A000000000000000000000E /* CalendarPickerView.swift */; };
 		1B0000000000000000000007 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000007 /* Assets.xcassets */; };
 		1B0000000000000000000008 /* SobrietyCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000008 /* SobrietyCore.swift */; };
 		1B0000000000000000000009 /* ConfettiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0000000000000000000009 /* ConfettiView.swift */; };
@@ -59,6 +60,7 @@
 		1A0000000000000000000005 /* ActivityGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityGridView.swift; sourceTree = "<group>"; };
 		1A0000000000000000000006 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		1A000000000000000000000D /* RecoveryTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryTimelineView.swift; sourceTree = "<group>"; };
+		1A000000000000000000000E /* CalendarPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarPickerView.swift; sourceTree = "<group>"; };
 		1A0000000000000000000007 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1A0000000000000000000008 /* SobrietyCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SobrietyCore.swift; sourceTree = "<group>"; };
 		1A0000000000000000000009 /* ConfettiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfettiView.swift; sourceTree = "<group>"; };
@@ -124,6 +126,7 @@
 				1A0000000000000000000005 /* ActivityGridView.swift */,
 				1A0000000000000000000006 /* SettingsView.swift */,
 				1A000000000000000000000D /* RecoveryTimelineView.swift */,
+				1A000000000000000000000E /* CalendarPickerView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -250,6 +253,7 @@
 				1B0000000000000000000005 /* ActivityGridView.swift in Sources */,
 				1B0000000000000000000006 /* SettingsView.swift in Sources */,
 				1B000000000000000000000C /* RecoveryTimelineView.swift in Sources */,
+				1B000000000000000000000D /* CalendarPickerView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

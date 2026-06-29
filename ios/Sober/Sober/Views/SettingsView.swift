@@ -18,9 +18,7 @@ struct SettingsView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
                         field("Sobriety start date") {
-                            DatePicker("", selection: $date, in: ...Date(), displayedComponents: .date)
-                                .datePickerStyle(.graphical)
-                                .accentColor(Theme.accent)
+                            CalendarPickerView(selected: $date, isSober: { store.isSober(store.key($0)) })
                                 .onChange(of: date) { newValue in store.startDate = newValue }
                         }
 
