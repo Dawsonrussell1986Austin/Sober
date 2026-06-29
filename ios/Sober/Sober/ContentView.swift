@@ -17,6 +17,8 @@ struct ContentView: View {
                     header
                     heroRing
                     whyCard
+                    VerseOfDayView()
+                    SerenityPrayerView()
                     checkInCard
                     statsRow
                     savingsCard
@@ -36,9 +38,12 @@ struct ContentView: View {
                         Text(text)
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundColor(Theme.text)
-                            .padding(.horizontal, 18).padding(.vertical, 12)
-                            .background(Capsule().fill(Theme.surface2).overlay(Capsule().strokeBorder(Theme.accent)))
-                            .padding(.top, 60)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: 320)
+                            .padding(.horizontal, 18).padding(.vertical, 14)
+                            .background(RoundedRectangle(cornerRadius: 14).fill(Theme.surface2).overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Theme.accent)))
+                            .padding(.top, 60).padding(.horizontal, 24)
                         Spacer()
                     }
                     .transition(.move(edge: .top).combined(with: .opacity))
@@ -299,7 +304,11 @@ struct ContentView: View {
     // MARK: - Celebration
     private func celebrateIfNeeded() {
         guard let m = store.newlyReachedMilestone() else { return }
-        celebrateText = "\(m.icon) \(m.label) milestone! Incredible."
+        if let v = Scripture.milestoneVerse[m.days] {
+            celebrateText = "\(m.icon) \(m.label)!\n\u{201C}\(v.text)\u{201D} — \(v.ref)"
+        } else {
+            celebrateText = "\(m.icon) \(m.label) milestone! Incredible."
+        }
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         withAnimation { showConfetti = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.9) {
